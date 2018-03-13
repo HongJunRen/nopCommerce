@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using Nop.Core;
+using Nop.Core.Infrastructure;
 using Nop.Core.Plugins;
 using Nop.Services.Cms;
 using Nop.Services.Configuration;
@@ -18,13 +19,15 @@ namespace Nop.Plugin.Widgets.NivoSlider
         private readonly IPictureService _pictureService;
         private readonly ISettingService _settingService;
         private readonly IWebHelper _webHelper;
+        private readonly INopFileProvider _fileProvider;
 
         public NivoSliderPlugin(IPictureService pictureService,
-            ISettingService settingService, IWebHelper webHelper)
+            ISettingService settingService, IWebHelper webHelper, INopFileProvider fileProvider)
         {
             this._pictureService = pictureService;
             this._settingService = settingService;
             this._webHelper = webHelper;
+            this._fileProvider = fileProvider;
         }
 
         /// <summary>
@@ -60,7 +63,7 @@ namespace Nop.Plugin.Widgets.NivoSlider
         public override void Install()
         {
             //pictures
-            var sampleImagesPath = CommonHelper.MapPath("~/Plugins/Widgets.NivoSlider/Content/nivoslider/sample-images/");
+            var sampleImagesPath = _fileProvider.MapPath("~/Plugins/Widgets.NivoSlider/Content/nivoslider/sample-images/");
             
             //settings
             var settings = new NivoSliderSettings

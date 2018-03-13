@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -10,18 +9,14 @@ using Microsoft.Net.Http.Headers;
 using Nop.Web.Areas.Admin.Models.Common;
 using Nop.Core;
 using Nop.Core.Caching;
-using Nop.Core.Domain.Catalog;
-using Nop.Core.Domain.Directory;
+using Nop.Core.Infrastructure;
 using Nop.Services.Common;
 using Nop.Services.Customers;
-using Nop.Services.Directory;
 using Nop.Services.Helpers;
 using Nop.Services.Localization;
 using Nop.Services.Orders;
-using Nop.Services.Payments;
 using Nop.Services.Security;
 using Nop.Services.Seo;
-using Nop.Services.Stores;
 using Nop.Web.Areas.Admin.Helpers;
 using Nop.Web.Framework.Controllers;
 using Nop.Web.Framework.Kendoui;
@@ -31,6 +26,12 @@ namespace Nop.Web.Areas.Admin.Controllers
 {
     public partial class CommonController : BaseAdminController
     {
+        #region Const
+
+        private const string EXPORT_IMPORT_PATH = @"files\exportimport";
+
+        #endregion
+
         #region Fields
 
         private readonly IShoppingCartService _shoppingCartService;
@@ -44,8 +45,8 @@ namespace Nop.Web.Areas.Admin.Controllers
         private readonly ILocalizationService _localizationService;
         private readonly ISearchTermService _searchTermService;
         private readonly IMaintenanceService _maintenanceService;
-        private readonly IHostingEnvironment _hostingEnvironment;
         private readonly IStaticCacheManager _cacheManager;
+        private readonly INopFileProvider _fileProvider;
 
         #endregion
 
@@ -62,8 +63,8 @@ namespace Nop.Web.Areas.Admin.Controllers
             ILocalizationService localizationService,
             ISearchTermService searchTermService,
             IMaintenanceService maintenanceService,
-            IHostingEnvironment hostingEnvironment,
-            IStaticCacheManager cacheManager)
+            IStaticCacheManager cacheManager,
+            INopFileProvider fileProvider)
         {
             this._shoppingCartService = shoppingCartService;
             this._customerService = customerService;
@@ -76,8 +77,8 @@ namespace Nop.Web.Areas.Admin.Controllers
             this._localizationService = localizationService;
             this._searchTermService = searchTermService;
             this._maintenanceService = maintenanceService;
-            this._hostingEnvironment = hostingEnvironment;
             this._cacheManager = cacheManager;
+            this._fileProvider = fileProvider;
         }
 
         #endregion
@@ -158,7 +159,7 @@ namespace Nop.Web.Areas.Admin.Controllers
 
                     //https://stackoverflow.com/questions/2050396/getting-the-date-of-a-net-assembly
                     //we use a simple method because the more Jeff Atwood's solution doesn't work anymore (more info at https://blog.codinghorror.com/determining-build-date-the-hard-way/)
-                    loadedAssembly.BuildDate = assembly.IsDynamic ? null : (DateTime?)TimeZoneInfo.ConvertTimeFromUtc(System.IO.File.GetLastWriteTimeUtc(assembly.Location), TimeZoneInfo.Local);
+                    loadedAssembly.BuildDate = assembly.IsDynamic ? null : (DateTime?)TimeZoneInfo.ConvertTimeFromUtc(_fileProvider.GetLastWriteTimeUtc(assembly.Location), TimeZoneInfo.Local);
                 }
                 catch (Exception) { }
                 model.LoadedAssemblies.Add(loadedAssembly);
@@ -233,20 +234,21 @@ namespace Nop.Web.Areas.Admin.Controllers
 
 
             model.DeleteExportedFiles.NumberOfDeletedFiles = 0;
-            var path = Path.Combine(_hostingEnvironment.WebRootPath, "files\\exportimport");
-            foreach (var fullPath in Directory.GetFiles(path))
+           
+            foreach (var fullPath in _fileProvider.GetFiles(_fileProvider.GetAbsolutePath(EXPORT_IMPORT_PATH)))
             {
                 try
                 {
-                    var fileName = Path.GetFileName(fullPath);
+                    var fileName = _fileProvider.GetFileName(fullPath);
                     if (fileName.Equals("index.htm", StringComparison.InvariantCultureIgnoreCase))
                         continue;
 
-                    var info = new FileInfo(fullPath);
-                    if ((!startDateValue.HasValue || startDateValue.Value < info.CreationTimeUtc) &&
-                        (!endDateValue.HasValue || info.CreationTimeUtc < endDateValue.Value))
+                    var info = _fileProvider.GetFileInfo(_fileProvider.Combine(EXPORT_IMPORT_PATH, fileName));
+                    var lastModifiedTimeUtc = info.LastModified.UtcDateTime;
+                    if ((!startDateValue.HasValue || startDateValue.Value < lastModifiedTimeUtc) &&
+                        (!endDateValue.HasValue || lastModifiedTimeUtc < endDateValue.Value))
                     {
-                        System.IO.File.Delete(fullPath);
+                        _fileProvider.DeleteFile(fullPath);
                         model.DeleteExportedFiles.NumberOfDeletedFiles++;
                     }
                 }
@@ -316,7 +318,7 @@ namespace Nop.Web.Areas.Admin.Controllers
                 {
                     case "delete-backup":
                     {
-                        System.IO.File.Delete(backupPath);
+                        _fileProvider.DeleteFile(backupPath);
                         SuccessNotification(string.Format(_localizationService.GetResource("Admin.System.Maintenance.BackupDatabase.BackupDeleted"), fileName));
                     }
                         break;

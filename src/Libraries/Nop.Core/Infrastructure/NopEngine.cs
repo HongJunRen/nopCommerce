@@ -149,9 +149,10 @@ namespace Nop.Core.Infrastructure
 
             //set base application path
             var provider = services.BuildServiceProvider();
-            var hostingEnvironment = provider.GetRequiredService<IHostingEnvironment>();
             var nopConfig = provider.GetRequiredService<NopConfig>();
-            CommonHelper.BaseDirectory = hostingEnvironment.ContentRootPath;
+            var hostingEnvironment = provider.GetRequiredService<IHostingEnvironment>();
+
+            CommonHelper.NopFileProvider = new NopFileProvider(hostingEnvironment);
 
             //initialize plugins
             var mvcCoreBuilder = services.AddMvcCore();
@@ -206,9 +207,9 @@ namespace Nop.Core.Infrastructure
 
             //resolve assemblies here. otherwise, plugins can throw an exception when rendering views
             AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
-
+          
             //set App_Data path as base data directory (required to create and save SQL Server Compact database file in App_Data folder)
-            AppDomain.CurrentDomain.SetData("DataDirectory", CommonHelper.MapPath("~/App_Data/"));
+            AppDomain.CurrentDomain.SetData("DataDirectory", CommonHelper.NopFileProvider.MapPath("~/App_Data/"));
 
             return _serviceProvider;
         }

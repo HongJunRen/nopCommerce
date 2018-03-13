@@ -5,10 +5,11 @@ using System.Data.Common;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
-using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.FileProviders;
 using Nop.Core;
 using Nop.Core.Data;
 using Nop.Core.Domain.Common;
+using Nop.Core.Infrastructure;
 using Nop.Data;
 
 namespace Nop.Services.Common
@@ -23,7 +24,7 @@ namespace Nop.Services.Common
         private readonly IDataProvider _dataProvider;
         private readonly IDbContext _dbContext;
         private readonly CommonSettings _commonSettings;
-        private readonly IHostingEnvironment _hostingEnvironment;
+        private readonly INopFileProvider _fileProvider;
 
         #endregion
 
@@ -35,14 +36,14 @@ namespace Nop.Services.Common
         /// <param name="dataProvider">Data provider</param>
         /// <param name="dbContext">Database Context</param>
         /// <param name="commonSettings">Common settings</param>
-        /// <param name="hostingEnvironment">Hosting environment</param>
+        /// <param name="fileProvider">File provider</param>
         public MaintenanceService(IDataProvider dataProvider, IDbContext dbContext,
-            CommonSettings commonSettings, IHostingEnvironment hostingEnvironment)
+            CommonSettings commonSettings, INopFileProvider fileProvider)
         {
             this._dataProvider = dataProvider;
             this._dbContext = dbContext;
             this._commonSettings = commonSettings;
-            this._hostingEnvironment = hostingEnvironment;
+            this._fileProvider = fileProvider;
         }
 
         #endregion
@@ -56,9 +57,9 @@ namespace Nop.Services.Common
         /// <returns></returns>
         protected virtual string GetBackupDirectoryPath(bool ensureFolderCreated = true)
         {
-            var path = Path.Combine(_hostingEnvironment.WebRootPath, "db_backups\\");
+            var path = _fileProvider.GetAbsolutePath("db_backups\\");
             if (ensureFolderCreated)
-                System.IO.Directory.CreateDirectory(path);
+                _fileProvider.CreateDirectory(path);
             return path;
         }
 
@@ -123,16 +124,18 @@ namespace Nop.Services.Common
         /// Gets all backup files
         /// </summary>
         /// <returns>Backup file collection</returns>
-        public virtual IList<FileInfo> GetAllBackupFiles()
+        public virtual IList<IFileInfo> GetAllBackupFiles()
         {
             var path = GetBackupDirectoryPath();
 
-            if (!System.IO.Directory.Exists(path))
+            if (!_fileProvider.DirectoryExists(path))
             {
                 throw new IOException("Backup directory not exists");
             }
-
-            return System.IO.Directory.GetFiles(path, "*.bak").Select(fullPath => new FileInfo(fullPath)).OrderByDescending(p => p.CreationTime).ToList();
+            
+            return _fileProvider.GetFiles(path, "*.bak")
+                .Select(fullPath => new NopFileInfo(_fileProvider, fullPath) as IFileInfo)
+                .OrderByDescending(p => p.LastModified).ToList();
         }
 
         /// <summary>
@@ -141,17 +144,9 @@ namespace Nop.Services.Common
         public virtual void BackupDatabase()
         {
             CheckBackupSupported();
-            var fileName = string.Format(
-                "{0}database_{1}_{2}.bak",
-                GetBackupDirectoryPath(),
-                DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss"),
-                CommonHelper.GenerateRandomDigitCode(10));
+            var fileName = $"{GetBackupDirectoryPath()}database_{DateTime.Now:yyyy-MM-dd-HH-mm-ss}_{CommonHelper.GenerateRandomDigitCode(10)}.bak";
 
-            var commandText = string.Format(
-                "BACKUP DATABASE [{0}] TO DISK = '{1}' WITH FORMAT",
-                _dbContext.DbName(),
-                fileName);
-
+            var commandText = $"BACKUP DATABASE [{_dbContext.DbName()}] TO DISK = '{fileName}' WITH FORMAT";
 
             _dbContext.ExecuteSqlCommand(commandText, true);
         }
@@ -206,7 +201,7 @@ namespace Nop.Services.Common
         /// <returns>The path to the backup file</returns>
         public virtual string GetBackupPath(string backupFileName)
         {
-            return Path.Combine(GetBackupDirectoryPath(), backupFileName);
+            return _fileProvider.Combine(GetBackupDirectoryPath(), backupFileName);
         }
         
         #endregion

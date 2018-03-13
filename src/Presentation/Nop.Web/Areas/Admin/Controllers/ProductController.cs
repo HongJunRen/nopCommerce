@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -23,6 +22,7 @@ using Nop.Core.Domain.Media;
 using Nop.Core.Domain.Orders;
 using Nop.Core.Domain.Tax;
 using Nop.Core.Domain.Vendors;
+using Nop.Core.Infrastructure;
 using Nop.Services;
 using Nop.Services.Catalog;
 using Nop.Services.Common;
@@ -48,6 +48,7 @@ using Nop.Web.Framework.Extensions;
 using Nop.Web.Framework.Kendoui;
 using Nop.Web.Framework.Mvc;
 using Nop.Web.Framework.Mvc.Filters;
+using System.IO;
 
 namespace Nop.Web.Areas.Admin.Controllers
 {
@@ -99,6 +100,7 @@ namespace Nop.Web.Areas.Admin.Controllers
         private readonly ISettingService _settingService;
         private readonly TaxSettings _taxSettings;
         private readonly VendorSettings _vendorSettings;
+        private readonly INopFileProvider _fileProvider;
 
         #endregion
 
@@ -147,7 +149,8 @@ namespace Nop.Web.Areas.Admin.Controllers
             IDownloadService downloadService,
             ISettingService settingService,
             TaxSettings taxSettings,
-            VendorSettings vendorSettings)
+            VendorSettings vendorSettings,
+            INopFileProvider fileProvider)
         {
             this._productService = productService;
             this._productTemplateService = productTemplateService;
@@ -193,6 +196,7 @@ namespace Nop.Web.Areas.Admin.Controllers
             this._settingService = settingService;
             this._taxSettings = taxSettings;
             this._vendorSettings = vendorSettings;
+            this._fileProvider = fileProvider;
         }
 
         #endregion
@@ -645,7 +649,7 @@ namespace Nop.Web.Areas.Admin.Controllers
                             DateTime? selectedDate = null;
                             try
                             {
-                                selectedDate = new DateTime(Int32.Parse(year), Int32.Parse(month), Int32.Parse(date));
+                                selectedDate = new DateTime(int.Parse(year), int.Parse(month), int.Parse(date));
                             }
                             catch
                             {
@@ -685,8 +689,8 @@ namespace Nop.Web.Areas.Admin.Controllers
                                         DownloadUrl = "",
                                         DownloadBinary = httpPostedFile.GetDownloadBits(),
                                         ContentType = httpPostedFile.ContentType,
-                                        Filename = Path.GetFileNameWithoutExtension(httpPostedFile.FileName),
-                                        Extension = Path.GetExtension(httpPostedFile.FileName),
+                                        Filename = _fileProvider.GetFileNameWithoutExtension(httpPostedFile.FileName),
+                                        Extension = _fileProvider.GetFileExtension(httpPostedFile.FileName),
                                         IsNew = true
                                     };
                                     _downloadService.InsertDownload(download);

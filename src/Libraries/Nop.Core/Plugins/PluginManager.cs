@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Newtonsoft.Json;
 using Nop.Core.ComponentModel;
 using Nop.Core.Configuration;
+using Nop.Core.Infrastructure;
 
 //Contributor: Umbraco (http://www.umbraco.com). Thanks a lot! 
 //SEE THIS POST for full details of what this does - http://shazwazza.com/post/Developing-a-plugin-framework-in-ASPNET-with-medium-trust.aspx
@@ -33,6 +34,7 @@ namespace Nop.Core.Plugins
         private static DirectoryInfo _shadowCopyFolder;
         private static readonly List<string> BaseAppLibraries;
         private static DirectoryInfo _reserveShadowCopyFolder;
+        private static INopFileProvider _fileProvider;
 
         #endregion
 
@@ -101,7 +103,7 @@ namespace Nop.Core.Plugins
             if (!File.Exists(filePath))
             {
                 //if not, try to parse the file that was used in previous nopCommerce versions
-                filePath = CommonHelper.MapPath(ObsoleteInstalledPluginsFilePath);
+                filePath = _fileProvider.MapPath(ObsoleteInstalledPluginsFilePath);
                 if (!File.Exists(filePath))
                     return new List<string>();
 
@@ -118,7 +120,7 @@ namespace Nop.Core.Plugins
                 }
 
                 //save system names of installed plugins to the new file
-                SaveInstalledPluginNames(pluginSystemNames, CommonHelper.MapPath(InstalledPluginsFilePath));
+                SaveInstalledPluginNames(pluginSystemNames, _fileProvider.MapPath(InstalledPluginsFilePath));
 
                 //and delete the old one
                 File.Delete(filePath);
@@ -349,6 +351,7 @@ namespace Nop.Core.Plugins
         /// </summary>
         /// <param name="applicationPartManager">Application part manager</param>
         /// <param name="config">Config</param>
+        /// <param name="fileProvider">File provide</param>
         public static void Initialize(ApplicationPartManager applicationPartManager, NopConfig config)
         {
             if (applicationPartManager == null)
@@ -357,20 +360,23 @@ namespace Nop.Core.Plugins
             if (config == null)
                 throw new ArgumentNullException(nameof(config));
 
+            var fileProvider = CommonHelper.NopFileProvider;
+
             using (new WriteLockDisposable(Locker))
             {
                 // TODO: Add verbose exception handling / raising here since this is happening on app startup and could
                 // prevent app from starting altogether
-                var pluginFolder = new DirectoryInfo(CommonHelper.MapPath(PluginsPath));
-                _shadowCopyFolder = new DirectoryInfo(CommonHelper.MapPath(ShadowCopyPath));
-                _reserveShadowCopyFolder = new DirectoryInfo(Path.Combine(CommonHelper.MapPath(ShadowCopyPath), $"{RESERVE_SHADOW_COPY_FOLDER_NAME}{DateTime.Now.ToFileTimeUtc()}"));
+                var pluginFolder = new DirectoryInfo(fileProvider.MapPath(PluginsPath));
+                _shadowCopyFolder = new DirectoryInfo(fileProvider.MapPath(ShadowCopyPath));
+                _reserveShadowCopyFolder = new DirectoryInfo(Path.Combine(fileProvider.MapPath(ShadowCopyPath), $"{RESERVE_SHADOW_COPY_FOLDER_NAME}{DateTime.Now.ToFileTimeUtc()}"));
+                _fileProvider = fileProvider;
 
                 var referencedPlugins = new List<PluginDescriptor>();
                 var incompatiblePlugins = new List<string>();
 
                 try
                 {
-                    var installedPluginSystemNames = GetInstalledPluginNames(CommonHelper.MapPath(InstalledPluginsFilePath));
+                    var installedPluginSystemNames = GetInstalledPluginNames(fileProvider.MapPath(InstalledPluginsFilePath));
 
                     Debug.WriteLine("Creating shadow copy folder and querying for DLLs");
                     //ensure folders are created
@@ -408,7 +414,7 @@ namespace Nop.Core.Plugins
                         {
                             try
                             {
-                                CommonHelper.DeleteDirectory(directory.FullName);
+                                fileProvider.DeleteDirectory(directory.FullName);
                             }
                             catch
                             {
@@ -530,7 +536,7 @@ namespace Nop.Core.Plugins
             if (string.IsNullOrEmpty(systemName))
                 throw new ArgumentNullException(nameof(systemName));
 
-            var filePath = CommonHelper.MapPath(InstalledPluginsFilePath);
+            var filePath = _fileProvider.MapPath(InstalledPluginsFilePath);
 
             //create file if not exists
             if (!File.Exists(filePath))
@@ -560,7 +566,7 @@ namespace Nop.Core.Plugins
             if (string.IsNullOrEmpty(systemName))
                 throw new ArgumentNullException(nameof(systemName));
 
-            var filePath = CommonHelper.MapPath(InstalledPluginsFilePath);
+            var filePath = _fileProvider.MapPath(InstalledPluginsFilePath);
 
             //create file if not exists
             if (!File.Exists(filePath))
@@ -586,7 +592,7 @@ namespace Nop.Core.Plugins
         /// </summary>
         public static void MarkAllPluginsAsUninstalled()
         {
-            var filePath = CommonHelper.MapPath(InstalledPluginsFilePath);
+            var filePath = _fileProvider.MapPath(InstalledPluginsFilePath);
             if (File.Exists(filePath))
                 File.Delete(filePath);
         }
@@ -678,7 +684,7 @@ namespace Nop.Core.Plugins
                 return false;
 
             if (pluginDescriptor.OriginalAssemblyFile.Directory.Exists)
-                CommonHelper.DeleteDirectory(pluginDescriptor.OriginalAssemblyFile.DirectoryName);
+                _fileProvider.DeleteDirectory(pluginDescriptor.OriginalAssemblyFile.DirectoryName);
 
             return true;
         }

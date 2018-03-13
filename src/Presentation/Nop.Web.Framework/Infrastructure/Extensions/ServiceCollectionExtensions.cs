@@ -158,8 +158,11 @@ namespace Nop.Web.Framework.Infrastructure.Extensions
         /// <param name="services">Collection of service descriptors</param>
         public static void AddNopDataProtection(this IServiceCollection services)
         {
+            var fileProvider = CommonHelper.NopFileProvider;
+
             //check whether to persist data protection in Redis
             var nopConfig = services.BuildServiceProvider().GetRequiredService<NopConfig>();
+
             if (nopConfig.RedisCachingEnabled && nopConfig.PersistDataProtectionKeysToRedis)
             {
                 //store keys in Redis
@@ -172,7 +175,7 @@ namespace Nop.Web.Framework.Infrastructure.Extensions
             }
             else
             {
-                var dataProtectionKeysPath = CommonHelper.MapPath("~/App_Data/DataProtectionKeys");
+                var dataProtectionKeysPath = fileProvider.MapPath("~/App_Data/DataProtectionKeys");
                 var dataProtectionKeysFolder = new DirectoryInfo(dataProtectionKeysPath);
 
                 //configure the data protection system to persist keys to the specified directory
