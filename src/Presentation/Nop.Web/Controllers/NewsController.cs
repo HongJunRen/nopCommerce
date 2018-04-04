@@ -123,13 +123,19 @@ namespace Nop.Web.Controllers
                 return RedirectToRoute("HomePage");
 
             var newsItem = _newsService.GetNewsById(newsItemId);
-            if (newsItem == null ||
-                !newsItem.Published ||
-                (newsItem.StartDateUtc.HasValue && newsItem.StartDateUtc.Value >= DateTime.UtcNow) ||
-                (newsItem.EndDateUtc.HasValue && newsItem.EndDateUtc.Value <= DateTime.UtcNow) ||
+
+            var notAvailable =
+                //published?
+                !newsItem.Published ||                
                 //Store mapping
-                !_storeMappingService.Authorize(newsItem))
-                return RedirectToRoute("HomePage");
+                !_storeMappingService.Authorize(newsItem);
+
+            //We should allows him (her) to use "Preview" functionality
+            if ((newsItem == null ||                
+                (newsItem.StartDateUtc.HasValue && newsItem.StartDateUtc.Value >= DateTime.UtcNow) ||
+                (newsItem.EndDateUtc.HasValue && newsItem.EndDateUtc.Value <= DateTime.UtcNow)) && notAvailable
+                )
+                return RedirectToRoute("HomePage");            
 
             var model = new NewsItemModel();
             model = _newsModelFactory.PrepareNewsItemModel(model, newsItem, true);
