@@ -100,13 +100,17 @@ namespace Nop.Web.Factories
             var cachedModel = _cacheManager.Get(cacheKey, () =>
             {
                 var topic = _topicService.GetTopicById(topicId);
-                if (topic == null)
-                    return null;
-                if (!topic.Published)
-                    return null;
+
+                var notAvailable =
+                //published?
+                !topic.Published ||
                 //Store mapping
-                if (!_storeMappingService.Authorize(topic))
+                !_storeMappingService.Authorize(topic);
+
+                //We should allows him (her) to use "Preview" functionality
+                if (topic == null && notAvailable)
                     return null;
+                
                 //ACL (access control list)
                 if (!_aclService.Authorize(topic))
                     return null;
