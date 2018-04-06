@@ -40,8 +40,7 @@ namespace Nop.Web.Controllers
         private readonly ICustomerActivityService _customerActivityService;
         private readonly IStoreMappingService _storeMappingService;
         private readonly IPermissionService _permissionService;
-        private readonly IEventPublisher _eventPublisher;
-
+        private readonly IEventPublisher _eventPublisher;        
         private readonly NewsSettings _newsSettings;
         private readonly LocalizationSettings _localizationSettings;
         private readonly CaptchaSettings _captchaSettings;
@@ -60,7 +59,7 @@ namespace Nop.Web.Controllers
             ICustomerActivityService customerActivityService,
             IStoreMappingService storeMappingService,
             IPermissionService permissionService,
-            IEventPublisher eventPublisher,
+            IEventPublisher eventPublisher,            
             NewsSettings newsSettings,
             LocalizationSettings localizationSettings, 
             CaptchaSettings captchaSettings)
@@ -76,7 +75,6 @@ namespace Nop.Web.Controllers
             this._storeMappingService = storeMappingService;
             this._permissionService = permissionService;
             this._eventPublisher = eventPublisher;
-
             this._newsSettings = newsSettings;
             this._localizationSettings = localizationSettings;
             this._captchaSettings = captchaSettings;
@@ -116,26 +114,32 @@ namespace Nop.Web.Controllers
             feed.Items = items;
             return new RssActionResult(feed, _webHelper.GetThisPageUrl(false));
         }
-
+        
         public virtual IActionResult NewsItem(int newsItemId)
         {
             if (!_newsSettings.Enabled)
                 return RedirectToRoute("HomePage");
 
             var newsItem = _newsService.GetNewsById(newsItemId);
+            if (newsItem == null)
+            {
+                return RedirectToRoute("HomePage");
+            }
 
             var notAvailable =
-                //published?
-                !newsItem.Published ||                
-                //Store mapping
-                !_storeMappingService.Authorize(newsItem);
+               //published?
+               !newsItem.Published ||               
+               //Store mapping
+               !_storeMappingService.Authorize(newsItem);
 
-            //We should allows him (her) to use "Preview" functionality
-            if ((newsItem == null ||                
+            if ((
                 (newsItem.StartDateUtc.HasValue && newsItem.StartDateUtc.Value >= DateTime.UtcNow) ||
-                (newsItem.EndDateUtc.HasValue && newsItem.EndDateUtc.Value <= DateTime.UtcNow)) && notAvailable
+                (newsItem.EndDateUtc.HasValue && newsItem.EndDateUtc.Value <= DateTime.UtcNow))                 
                 )
-                return RedirectToRoute("HomePage");            
+                return RedirectToRoute("HomePage");
+
+            if (notAvailable && !_permissionService.Authorize(StandardPermissionProvider.ManageCategories))
+                return RedirectToRoute("HomePage");
 
             var model = new NewsItemModel();
             model = _newsModelFactory.PrepareNewsItemModel(model, newsItem, true);

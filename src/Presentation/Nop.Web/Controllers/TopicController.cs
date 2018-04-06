@@ -48,11 +48,11 @@ namespace Nop.Web.Controllers
         public virtual IActionResult TopicDetails(int topicId)
         {
             var model = _topicModelFactory.PrepareTopicModelById(topicId);
-            if (model == null)
-                return RedirectToRoute("HomePage");
+            if (model == null || !_permissionService.Authorize(StandardPermissionProvider.ManageTopics))
+                return RedirectToRoute("HomePage");            
 
             //display "edit" (manage) link
-            if (_permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel) && _permissionService.Authorize(StandardPermissionProvider.ManageTopics))
+                if (_permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel) && _permissionService.Authorize(StandardPermissionProvider.ManageTopics))
                 DisplayEditLink(Url.Action("Edit", "Topic", new { id = model.Id, area = AreaNames.Admin }));
 
             //template
