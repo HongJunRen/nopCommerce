@@ -1,8 +1,6 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Nop.Core;
-using Nop.Core.Infrastructure;
 using Nop.Web.Framework.Extensions;
 
 namespace Nop.Web.Framework.Security.Captcha
@@ -12,7 +10,7 @@ namespace Nop.Web.Framework.Security.Captcha
     /// </summary>
     public class GRecaptchaControl
     {
-        private const string RECAPTCHA_API_URL_VERSION2 = "https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit";
+        private const string RECAPTCHA_API_URL = "https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit";
 
         /// <summary>
         /// Identifier
@@ -57,13 +55,12 @@ namespace Nop.Web.Framework.Security.Captcha
             {
                 TagRenderMode = TagRenderMode.Normal
             };
-            scriptLoadApiTag.Attributes.Add("src", RECAPTCHA_API_URL_VERSION2 + (string.IsNullOrEmpty(Language) ? "" : $"&hl={Language}"
+            scriptLoadApiTag.Attributes.Add("src", RECAPTCHA_API_URL + (string.IsNullOrEmpty(Language) ? "" : $"&hl={Language}"
                                                    ));
             scriptLoadApiTag.Attributes.Add("async", null);
             scriptLoadApiTag.Attributes.Add("defer", null);
 
             return scriptCallbackTag.RenderHtmlContent() + captchaTag.RenderHtmlContent() + scriptLoadApiTag.RenderHtmlContent();
-
         }
 
         private void SetTheme()
@@ -91,7 +88,6 @@ namespace Nop.Web.Framework.Security.Captcha
                     }
                     break;
             }
-
         }
     }
 }

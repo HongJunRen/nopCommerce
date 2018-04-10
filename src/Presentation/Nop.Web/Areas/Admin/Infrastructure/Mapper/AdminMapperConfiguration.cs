@@ -734,7 +734,6 @@ namespace Nop.Web.Areas.Admin.Infrastructure.Mapper
 
             //Settings
             CreateMap<CaptchaSettings, CaptchaSettingsModel>()
-                .ForMember(dest => dest.AvailableReCaptchaVersions, mo => mo.Ignore())
                 .ForMember(dest => dest.Enabled_OverrideForStore, mo => mo.Ignore())
                 .ForMember(dest => dest.ShowOnLoginPage_OverrideForStore, mo => mo.Ignore())
                 .ForMember(dest => dest.ShowOnRegistrationPage_OverrideForStore, mo => mo.Ignore())

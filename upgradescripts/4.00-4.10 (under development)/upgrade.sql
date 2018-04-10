@@ -2297,6 +2297,7 @@ BEGIN
 END
 GO
 
+--del setting
 DELETE FROM [Setting]
-WHERE [Name] = 'captchasettings.recaptchaversion'
+WHERE [Name] = N'captchasettings.recaptchaversion'
 GO
