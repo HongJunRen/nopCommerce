@@ -121,33 +121,24 @@ namespace Nop.Web.Controllers
                 return RedirectToRoute("HomePage");
 
             var newsItem = _newsService.GetNewsById(newsItemId);
-            if (newsItem == null)
+            if (newsItem == null ||
+                 (
+                   (newsItem.StartDateUtc.HasValue && newsItem.StartDateUtc.Value >= DateTime.UtcNow) ||
+                   (newsItem.EndDateUtc.HasValue && newsItem.EndDateUtc.Value <= DateTime.UtcNow) ) && 
+                   !(_permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel) && _permissionService.Authorize(StandardPermissionProvider.ManageNews))
+               )
             {
                 return RedirectToRoute("HomePage");
-            }
+            }                       
 
-            var notAvailable =
-               //published?
-               !newsItem.Published ||               
-               //Store mapping
-               !_storeMappingService.Authorize(newsItem);
-
-            var isAdminAccess = _permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel) && _permissionService.Authorize(StandardPermissionProvider.ManageNews);
-
-            if (
-                 ((newsItem.StartDateUtc.HasValue && newsItem.StartDateUtc.Value >= DateTime.UtcNow) ||
-                 (newsItem.EndDateUtc.HasValue && newsItem.EndDateUtc.Value <= DateTime.UtcNow)) && !isAdminAccess
-                )
-                return RedirectToRoute("HomePage");
-
-            if (notAvailable && !_permissionService.Authorize(StandardPermissionProvider.ManageCategories))
+            if ((!newsItem.Published || !_storeMappingService.Authorize(newsItem)) && !_permissionService.Authorize(StandardPermissionProvider.ManageNews))
                 return RedirectToRoute("HomePage");
 
             var model = new NewsItemModel();
             model = _newsModelFactory.PrepareNewsItemModel(model, newsItem, true);
 
             //display "edit" (manage) link
-            if (isAdminAccess)
+            if (_permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel) && _permissionService.Authorize(StandardPermissionProvider.ManageNews))
                 DisplayEditLink(Url.Action("Edit", "News", new { id = newsItem.Id, area = AreaNames.Admin }));
 
             return View(model);

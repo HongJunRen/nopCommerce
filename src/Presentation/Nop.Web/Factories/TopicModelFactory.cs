@@ -99,7 +99,7 @@ namespace Nop.Web.Factories
                 string.Join(",", _workContext.CurrentCustomer.GetCustomerRoleIds()));
             var cachedModel = _cacheManager.Get(cacheKey, () =>
             {
-                var topic = _topicService.GetTopicById(topicId);
+                var topic = _topicService.GetTopicById(topicId);                
                 //check the possibility of "Preview"
                 if (topic == null && (!topic.Published ||  !_storeMappingService.Authorize(topic) ))
                     return null;
