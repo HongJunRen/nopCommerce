@@ -6887,13 +6887,7 @@
   </LocaleResource>
   <LocaleResource Name="Admin.Configuration.Settings.GeneralCommon.reCaptchaPublicKey.Hint">
     <Value>Enter reCAPTCHA public key (if enabled).</Value>
-  </LocaleResource>
-  <LocaleResource Name="Admin.Configuration.Settings.GeneralCommon.reCaptchaVersion">
-    <Value>reCAPTCHA version</Value>
-  </LocaleResource>
-  <LocaleResource Name="Admin.Configuration.Settings.GeneralCommon.reCaptchaVersion.Hint">
-    <Value>Select version of the reCAPTCHA.</Value>
-  </LocaleResource>
+  </LocaleResource>  
   <LocaleResource Name="Admin.Configuration.Settings.GeneralCommon.SeoFriendlyUrlsForLanguagesEnabled">
     <Value>SEO friendly URLs with multiple languages enabled</Value>
   </LocaleResource>
@@ -14897,10 +14891,7 @@
   </LocaleResource>
   <LocaleResource Name="Enums.Nop.Services.Payments.RecurringPaymentType.NotSupported">
     <Value>Not supported</Value>
-  </LocaleResource>  
-  <LocaleResource Name="Enums.Nop.Web.Framework.Security.Captcha.ReCaptchaVersion.Version2">
-    <Value>Version 2.0</Value>
-  </LocaleResource>
+  </LocaleResource> 
   <LocaleResource Name="Nop.Web.Framework.Validators.MaxDecimal">
     <Value>The value is out of range. Maximum value is {0}.99</Value>
   </LocaleResource>  

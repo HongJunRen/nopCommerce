@@ -835,28 +835,7 @@
                                     <nop-editor asp-for="CaptchaSettings.ShowOnApplyVendorPage" />
                                     <span asp-validation-for="CaptchaSettings.ShowOnApplyVendorPage"></span>
                                 </div>
-                            </div>
-                            <div class="form-group" id="ssReCaptchaVersionpnl">
-                                <div class="col-md-3">
-                                    <nop-override-store-checkbox asp-for="CaptchaSettings.ReCaptchaVersion_OverrideForStore" asp-input="CaptchaSettings.ReCaptchaVersion" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
-                                    <nop-label asp-for="CaptchaSettings.ReCaptchaVersion" />
-                                </div>
-                                @if (Model.CaptchaSettings.AvailableReCaptchaVersions.Count > 1)
-                                {
-                                    <div class="col-md-9">
-                                        <nop-select asp-for="CaptchaSettings.ReCaptchaVersion" asp-items="Model.CaptchaSettings.AvailableReCaptchaVersions" />
-                                        <span asp-validation-for="CaptchaSettings.ReCaptchaVersion"></span>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div class="col-md-1">
-                                        <div class="form-text-row">                                            
-                                            @T("Enums.Nop.Web.Framework.Security.Captcha.ReCaptchaVersion." + Model.CaptchaSettings.ReCaptchaVersion.ToString())
-                                        </div>
-                                    </div>                                    
-                                }                                
-                            </div>
+                            </div>                            
                             <div class="form-group" id="ssReCaptchaPublicKeypnl">
                                 <div class="col-md-3">
                                     <nop-override-store-checkbox asp-for="CaptchaSettings.ReCaptchaPublicKey_OverrideForStore" asp-input="CaptchaSettings.ReCaptchaPublicKey" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
