@@ -48,7 +48,7 @@ namespace Nop.Web.Controllers
         public virtual IActionResult TopicDetails(int topicId)
         {
             var model = _topicModelFactory.PrepareTopicModelById(topicId);
-            if (model == null || !_permissionService.Authorize(StandardPermissionProvider.ManageTopics))
+            if (model == null || (!_permissionService.Authorize(StandardPermissionProvider.ManageTopics) && !model.Published))
                 return RedirectToRoute("HomePage");            
 
             //display "edit" (manage) link

@@ -76,7 +76,8 @@ namespace Nop.Web.Factories
                 MetaDescription = topic.GetLocalized(x => x.MetaDescription),
                 MetaTitle = topic.GetLocalized(x => x.MetaTitle),
                 SeName = topic.GetSeName(),
-                TopicTemplateId = topic.TopicTemplateId
+                TopicTemplateId = topic.TopicTemplateId,
+                Published = topic.Published
             };
             return model;
         }
@@ -99,14 +100,10 @@ namespace Nop.Web.Factories
                 string.Join(",", _workContext.CurrentCustomer.GetCustomerRoleIds()));
             var cachedModel = _cacheManager.Get(cacheKey, () =>
             {
-                var topic = _topicService.GetTopicById(topicId);                
-                //check the possibility of "Preview"
-                if (topic == null && (!topic.Published ||  !_storeMappingService.Authorize(topic) ))
-                    return null;
-                
+                var topic = _topicService.GetTopicById(topicId);
                 //ACL (access control list)
-                if (!_aclService.Authorize(topic))
-                    return null;
+                if (topic == null || !_aclService.Authorize(topic))
+                    return null;                
                 return PrepareTopicModel(topic);
             });
 
