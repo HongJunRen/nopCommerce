@@ -27,7 +27,7 @@ namespace Nop.Services.Common
         /// Gets all backup files
         /// </summary>
         /// <returns>Backup file collection</returns>
-        IList<IFileInfo> GetAllBackupFiles();
+        IList<string> GetAllBackupFiles();
 
         /// <summary>
         /// Creates a backup of the database

@@ -5,7 +5,6 @@ using System.Data.Common;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
-using Microsoft.Extensions.FileProviders;
 using Nop.Core;
 using Nop.Core.Data;
 using Nop.Core.Domain.Common;
@@ -84,16 +83,14 @@ namespace Nop.Services.Common
         /// <returns>Integer ident; null if cannot get the result</returns>
         public virtual int? GetTableIdent<T>() where T: BaseEntity
         {
-            if (_commonSettings.UseStoredProceduresIfSupported && _dataProvider.StoredProceduredSupported)
-            {
-                //stored procedures are enabled and supported by the database
-                var tableName = _dbContext.GetTableName<T>();
-                var result = _dbContext.SqlQuery<decimal?>($"SELECT IDENT_CURRENT('[{tableName}]')").FirstOrDefault();
-                return result.HasValue ? Convert.ToInt32(result) : 1;
-            }
-            
             //stored procedures aren't supported
-            return null;
+            if (!_commonSettings.UseStoredProceduresIfSupported || !_dataProvider.StoredProceduredSupported)
+                return null;
+
+            //stored procedures are enabled and supported by the database
+            var tableName = _dbContext.GetTableName<T>();
+            var result = _dbContext.SqlQuery<decimal?>($"SELECT IDENT_CURRENT('[{tableName}]')").FirstOrDefault();
+            return result.HasValue ? Convert.ToInt32(result) : 1;            
         }
 
         /// <summary>
@@ -105,14 +102,13 @@ namespace Nop.Services.Common
         {
             if (_commonSettings.UseStoredProceduresIfSupported && _dataProvider.StoredProceduredSupported)
             {
-                //stored procedures are enabled and supported by the database.
-
                 var currentIdent = GetTableIdent<T>();
-                if (currentIdent.HasValue && ident > currentIdent.Value)
-                {
-                    var tableName = _dbContext.GetTableName<T>();
-                    _dbContext.ExecuteSqlCommand($"DBCC CHECKIDENT([{tableName}], RESEED, {ident})");
-                }
+                if (!currentIdent.HasValue || ident <= currentIdent.Value)
+                    return;
+
+                //stored procedures are enabled and supported by the database.
+                var tableName = _dbContext.GetTableName<T>();
+                _dbContext.ExecuteSqlCommand($"DBCC CHECKIDENT([{tableName}], RESEED, {ident})");
             }
             else
             {
@@ -124,7 +120,7 @@ namespace Nop.Services.Common
         /// Gets all backup files
         /// </summary>
         /// <returns>Backup file collection</returns>
-        public virtual IList<IFileInfo> GetAllBackupFiles()
+        public virtual IList<string> GetAllBackupFiles()
         {
             var path = GetBackupDirectoryPath();
 
@@ -134,8 +130,7 @@ namespace Nop.Services.Common
             }
             
             return _fileProvider.GetFiles(path, "*.bak")
-                .Select(fullPath => new NopFileInfo(_fileProvider, fullPath) as IFileInfo)
-                .OrderByDescending(p => p.LastModified).ToList();
+                .OrderByDescending(p => _fileProvider.GetLastWriteTime(p)).ToList();
         }
 
         /// <summary>
@@ -158,7 +153,7 @@ namespace Nop.Services.Common
         public virtual void RestoreDatabase(string backupFileName)
         {
             CheckBackupSupported();
-            var settings = new DataSettingsManager();
+            var settings = new DataSettingsManager(_fileProvider);
             var conn = new SqlConnectionStringBuilder(settings.LoadSettings().DataConnectionString)
             {
                 InitialCatalog = "master"

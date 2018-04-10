@@ -1,5 +1,4 @@
-﻿using System.IO;
-using System.Linq;
+﻿using System.Linq;
 using ImageResizer.Configuration;
 using ImageResizer.Plugins.PrettyGifs;
 using Microsoft.AspNetCore.Builder;
@@ -7,7 +6,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.Net.Http.Headers;
 using Nop.Core;
 using Nop.Core.Configuration;
@@ -66,6 +64,7 @@ namespace Nop.Web.Framework.Infrastructure
         public void Configure(IApplicationBuilder application)
         {
             var nopConfig = EngineContext.Current.Resolve<NopConfig>();
+            var fileProvider = EngineContext.Current.Resolve<INopFileProvider>();
 
             //compression
             if (nopConfig.UseResponseCompression)
@@ -89,7 +88,7 @@ namespace Nop.Web.Framework.Infrastructure
             //themes
             application.UseStaticFiles(new StaticFileOptions
             {
-                FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"Themes")),
+                FileProvider = new NopFileProvider(fileProvider.MapPath(@"Themes")),
                 RequestPath = new PathString("/Themes"),
                 OnPrepareResponse = ctx =>
                 {
@@ -101,7 +100,7 @@ namespace Nop.Web.Framework.Infrastructure
             //plugins
             var staticFileOptions = new StaticFileOptions
             {
-                FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"Plugins")),
+                FileProvider = new NopFileProvider(fileProvider.MapPath(@"Plugins")),
                 RequestPath = new PathString("/Plugins"),
                 OnPrepareResponse = ctx =>
                 {
@@ -133,11 +132,14 @@ namespace Nop.Web.Framework.Infrastructure
             application.UseStaticFiles(staticFileOptions);
 
             //add support for backups
-            var provider = new FileExtensionContentTypeProvider();
-            provider.Mappings[".bak"] = MimeTypes.ApplicationOctetStream;
+            var provider = new FileExtensionContentTypeProvider
+            {
+                Mappings = {[".bak"] = MimeTypes.ApplicationOctetStream}
+            };
+
             application.UseStaticFiles(new StaticFileOptions
             {
-                FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot", "db_backups")),
+                FileProvider = new NopFileProvider(fileProvider.GetAbsolutePath("db_backups")),
                 RequestPath = new PathString("/db_backups"),
                 ContentTypeProvider = provider
             });

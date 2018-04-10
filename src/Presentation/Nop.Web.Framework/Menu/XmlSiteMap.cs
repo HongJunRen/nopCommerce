@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using Microsoft.AspNetCore.Routing;
-using Nop.Core;
 using Nop.Core.Infrastructure;
 using Nop.Services.Localization;
 using Nop.Services.Security;
@@ -37,8 +36,10 @@ namespace Nop.Web.Framework.Menu
         /// <param name="physicalPath">Filepath to load a sitemap</param>
         public virtual void LoadFrom(string physicalPath)
         {
-            var filePath = CommonHelper.NopFileProvider.MapPath(physicalPath);
-            var content = CommonHelper.NopFileProvider.ReadAllText(filePath, Encoding.UTF8);
+            var fileProvider = EngineContext.Current.Resolve<INopFileProvider>();
+
+            var filePath = fileProvider.MapPath(physicalPath);
+            var content = fileProvider.ReadAllText(filePath, Encoding.UTF8);
 
             if (!string.IsNullOrEmpty(content))
             {

@@ -357,10 +357,11 @@ namespace Nop.Core
         #region Properties
 
         /// <summary>
-        /// Gets or sets base file provider
+        /// Gets or sets application base path
         /// </summary>
-        public static INopFileProvider NopFileProvider { get; set; }
+        public static string BaseDirectory { get; set; }
 
         #endregion
+
     }
 }

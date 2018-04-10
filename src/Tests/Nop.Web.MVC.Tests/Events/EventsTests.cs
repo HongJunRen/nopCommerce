@@ -21,10 +21,11 @@ namespace Nop.Web.MVC.Tests.Events
         [OneTimeSetUp]
         public void SetUp()
         {
+            CommonHelper.BaseDirectory = new NopFileProvider(System.Reflection.Assembly.GetExecutingAssembly().Location).Root;
+
             var hostingEnvironment = MockRepository.GenerateMock<IHostingEnvironment>();
 
             hostingEnvironment.Expect(x => x.WebRootPath).Return(Directory.GetCurrentDirectory());
-            CommonHelper.NopFileProvider = new NopFileProvider(hostingEnvironment);
             PluginManager.Initialize(new ApplicationPartManager(), new NopConfig());
 
             var subscriptionService = MockRepository.GenerateMock<ISubscriptionService>();

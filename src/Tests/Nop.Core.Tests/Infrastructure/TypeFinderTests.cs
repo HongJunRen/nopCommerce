@@ -11,7 +11,7 @@ namespace Nop.Core.Tests.Infrastructure
         [Test]
         public void TypeFinder_Benchmark_Findings()
         {
-            var finder = new AppDomainTypeFinder();
+            var finder = new AppDomainTypeFinder(new NopFileProvider(System.Reflection.Assembly.GetExecutingAssembly().Location));
 
             var type = finder.FindClassesOfType<ISomeInterface>();
             type.Count().ShouldEqual(1);

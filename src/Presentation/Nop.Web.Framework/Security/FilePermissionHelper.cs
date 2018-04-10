@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using System.IO;
+
 using System.Security.AccessControl;
 using System.Security.Principal;
 using Nop.Core.Data;
@@ -36,7 +36,8 @@ namespace Nop.Web.Framework.Security
             AuthorizationRuleCollection rules;
             try
             {
-                rules = Directory.GetAccessControl(path).GetAccessRules(true, true, typeof(SecurityIdentifier));
+                var fileProvider = EngineContext.Current.Resolve<INopFileProvider>();
+                rules = fileProvider.GetAccessControl(path).GetAccessRules(true, true, typeof(SecurityIdentifier));
             }
             catch
             {
@@ -142,7 +143,7 @@ namespace Nop.Web.Framework.Security
                 }
                 return flag13;
             }
-            catch (IOException)
+            catch (System.IO.IOException)
             {
             }
             return false;

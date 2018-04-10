@@ -18,6 +18,12 @@ namespace Nop.Core.Data
 
         #endregion
 
+        #region Fields
+
+        protected INopFileProvider _fileProvider;
+
+        #endregion
+
         #region Properties
 
         /// <summary>
@@ -26,7 +32,16 @@ namespace Nop.Core.Data
         public static string DataSettingsFilePath => DATA_SETTINGS_FILE_PATH_;
 
         #endregion
-        
+
+        #region Ctor
+
+        public DataSettingsManager(INopFileProvider fileProvider = null)
+        {
+            this._fileProvider = fileProvider ?? new NopFileProvider(CommonHelper.BaseDirectory);
+        }
+
+        #endregion
+
         #region Methods
 
         /// <summary>
@@ -40,21 +55,19 @@ namespace Nop.Core.Data
             if (!reloadSettings && Singleton<DataSettings>.Instance != null)
                 return Singleton<DataSettings>.Instance;
 
-            var fileProvider = CommonHelper.NopFileProvider;
-
-            filePath = filePath ?? fileProvider.MapPath(DataSettingsFilePath);
+            filePath = filePath ?? _fileProvider.MapPath(DataSettingsFilePath);
 
             //check whether file exists
-            if (!fileProvider.FileExists(filePath))
+            if (!_fileProvider.FileExists(filePath))
             {
                 //if not, try to parse the file that was used in previous nopCommerce versions
-                filePath = fileProvider.MapPath(OBSOLETE_DATA_SETTINGS_FILE_PATH);
-                if (!fileProvider.FileExists(filePath))
+                filePath = _fileProvider.MapPath(OBSOLETE_DATA_SETTINGS_FILE_PATH);
+                if (!_fileProvider.FileExists(filePath))
                     return new DataSettings();
 
                 //get data settings from the old txt file
                 var dataSettings = new DataSettings();
-                using (var reader = new StringReader(fileProvider.ReadAllText(filePath, Encoding.UTF8)))
+                using (var reader = new StringReader(_fileProvider.ReadAllText(filePath, Encoding.UTF8)))
                 {
                     string settingsLine;
                     while ((settingsLine = reader.ReadLine()) != null)
@@ -85,13 +98,13 @@ namespace Nop.Core.Data
                 SaveSettings(dataSettings);
 
                 //and delete the old one
-                fileProvider.DeleteFile(filePath);
+                _fileProvider.DeleteFile(filePath);
 
                 Singleton<DataSettings>.Instance = dataSettings;
                 return Singleton<DataSettings>.Instance;
             }
 
-            var text = fileProvider.ReadAllText(filePath, Encoding.UTF8);
+            var text = _fileProvider.ReadAllText(filePath, Encoding.UTF8);
             if (string.IsNullOrEmpty(text))
                 return new DataSettings();
 
@@ -107,20 +120,19 @@ namespace Nop.Core.Data
         public virtual void SaveSettings(DataSettings settings)
         {
             Singleton<DataSettings>.Instance = settings ?? throw new ArgumentNullException(nameof(settings));
-            var fileProvider = CommonHelper.NopFileProvider;
-
-            var filePath = fileProvider.MapPath(DataSettingsFilePath);
+            
+            var filePath = _fileProvider.MapPath(DataSettingsFilePath);
 
             //create file if not exists
-            if (!fileProvider.FileExists(filePath))
+            if (!_fileProvider.FileExists(filePath))
             {
                 //we use 'using' to close the file after it's created
-                using (fileProvider.CreateFile(filePath)) { }
+                using (_fileProvider.CreateFile(filePath)) { }
             }
 
             //save data settings to the file
             var text = JsonConvert.SerializeObject(Singleton<DataSettings>.Instance, Formatting.Indented);
-            fileProvider.WriteAllText(filePath, text, Encoding.UTF8);
+            _fileProvider.WriteAllText(filePath, text, Encoding.UTF8);
         }
 
         #endregion
