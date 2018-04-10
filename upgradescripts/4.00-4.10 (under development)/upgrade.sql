@@ -2296,3 +2296,7 @@ BEGIN
 	VALUES (N'ordersettings.deletegiftcardusagehistory', N'False', 0)
 END
 GO
+
+DELETE FROM [Setting]
+WHERE [Name] = 'captchasettings.recaptchaversion'
+GO

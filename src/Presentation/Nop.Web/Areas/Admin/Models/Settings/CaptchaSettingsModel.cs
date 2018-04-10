@@ -68,12 +68,7 @@ namespace Nop.Web.Areas.Admin.Models.Settings
 
         [NopResourceDisplayName("Admin.Configuration.Settings.GeneralCommon.reCaptchaPrivateKey")]
         public string ReCaptchaPrivateKey { get; set; }
-        public bool ReCaptchaPrivateKey_OverrideForStore { get; set; }
-
-        [NopResourceDisplayName("Admin.Configuration.Settings.GeneralCommon.reCaptchaVersion")]
-        public ReCaptchaVersion ReCaptchaVersion { get; set; }
-        public bool ReCaptchaVersion_OverrideForStore { get; set; }
-
+        public bool ReCaptchaPrivateKey_OverrideForStore { get; set; }        
         public IList<SelectListItem> AvailableReCaptchaVersions { get; set; }
 
         #endregion

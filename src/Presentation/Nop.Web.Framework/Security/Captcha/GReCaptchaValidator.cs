@@ -10,8 +10,6 @@ namespace Nop.Web.Framework.Security.Captcha
     public class GReCaptchaValidator
     {
         private const string RECAPTCHA_VERIFY_URL_VERSION2 = "https://www.google.com/recaptcha/api/siteverify?secret={0}&response={1}&remoteip={2}";
-        
-        private readonly ReCaptchaVersion _version;
 
         /// <summary>
         /// reCAPTCHA secret key
@@ -31,15 +29,6 @@ namespace Nop.Web.Framework.Security.Captcha
         public string Challenge { get; set; }
 
         /// <summary>
-        /// Ctor
-        /// </summary>
-        /// <param name="version">Version</param>
-        public GReCaptchaValidator(ReCaptchaVersion version = ReCaptchaVersion.Version2)
-        {
-            _version = version;
-        }
-
-        /// <summary>
         /// Parse response
         /// </summary>
         /// <param name="responseString">Response (string)</param>
@@ -48,14 +37,11 @@ namespace Nop.Web.Framework.Security.Captcha
         {
             var result = new GReCaptchaResponse();
 
-            if (_version == ReCaptchaVersion.Version2)
-            {
-                var resultObject = JObject.Parse(responseString);
-                result.IsValid = resultObject.Value<bool>("success");
-                if (resultObject.Value<JToken>("error-codes") != null &&
-                    resultObject.Value<JToken>("error-codes").Values<string>().Any())
-                    result.ErrorCodes = resultObject.Value<JToken>("error-codes").Values<string>().ToList();
-            }
+            var resultObject = JObject.Parse(responseString);
+            result.IsValid = resultObject.Value<bool>("success");
+            if (resultObject.Value<JToken>("error-codes") != null &&
+                resultObject.Value<JToken>("error-codes").Values<string>().Any())
+                result.ErrorCodes = resultObject.Value<JToken>("error-codes").Values<string>().ToList();
 
             return result;
         }
@@ -69,12 +55,8 @@ namespace Nop.Web.Framework.Security.Captcha
             GReCaptchaResponse result = null;
             var httpClient = new HttpClient();
             var requestUri = string.Empty;
+            requestUri = string.Format(RECAPTCHA_VERIFY_URL_VERSION2, SecretKey, Response, RemoteIp);
 
-            if (_version == ReCaptchaVersion.Version2)
-            {
-                requestUri = string.Format(RECAPTCHA_VERIFY_URL_VERSION2, SecretKey, Response, RemoteIp);
-            }
-                        
             try
             {
                 var taskResult = httpClient.GetAsync(requestUri);
