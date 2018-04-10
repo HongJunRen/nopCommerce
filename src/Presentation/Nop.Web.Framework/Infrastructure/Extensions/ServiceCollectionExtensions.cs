@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.DataProtection;
@@ -158,7 +157,8 @@ namespace Nop.Web.Framework.Infrastructure.Extensions
         /// <param name="services">Collection of service descriptors</param>
         public static void AddNopDataProtection(this IServiceCollection services)
         {
-            var fileProvider = CommonHelper.NopFileProvider;
+            //we create the file provider manually, since the DI isn't initialized yet
+            var fileProvider = new NopFileProvider(CommonHelper.BaseDirectory);
 
             //check whether to persist data protection in Redis
             var nopConfig = services.BuildServiceProvider().GetRequiredService<NopConfig>();
@@ -176,7 +176,7 @@ namespace Nop.Web.Framework.Infrastructure.Extensions
             else
             {
                 var dataProtectionKeysPath = fileProvider.MapPath("~/App_Data/DataProtectionKeys");
-                var dataProtectionKeysFolder = new DirectoryInfo(dataProtectionKeysPath);
+                var dataProtectionKeysFolder = new System.IO.DirectoryInfo(dataProtectionKeysPath);
 
                 //configure the data protection system to persist keys to the specified directory
                 services.AddDataProtection().PersistKeysToFileSystem(dataProtectionKeysFolder);
@@ -222,8 +222,11 @@ namespace Nop.Web.Framework.Infrastructure.Extensions
                     ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.None;
             });
 
+            //we create the file provider manually, since the DI isn't initialized yet
+            var fileProvider = new NopFileProvider(CommonHelper.BaseDirectory);
+
             //register and configure external authentication plugins now
-            var typeFinder = new WebAppTypeFinder();
+            var typeFinder = new WebAppTypeFinder(fileProvider);
             var externalAuthConfigurations = typeFinder.FindClassesOfType<IExternalAuthenticationRegistrar>();
             var externalAuthInstances = externalAuthConfigurations
                 .Where(x => PluginManager.FindPlugin(x)?.Installed ?? true) //ignore not installed plugins

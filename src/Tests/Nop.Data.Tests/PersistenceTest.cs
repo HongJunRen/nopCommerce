@@ -1,6 +1,7 @@
 ﻿using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using Nop.Core;
+using Nop.Core.Infrastructure;
 using NUnit.Framework;
 
 namespace Nop.Data.Tests
@@ -23,7 +24,8 @@ namespace Nop.Data.Tests
 
         protected string GetTestDbName()
         {
-            var testDbName = "Data Source=" + System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + @"\\Nop.Data.Tests.Db.sdf;Persist Security Info=False";
+            var fileProvider = new NopFileProvider(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            var testDbName = "Data Source=" + fileProvider.GetAbsolutePath() + @"\\Nop.Data.Tests.Db.sdf;Persist Security Info=False";
             return testDbName;
         }        
         

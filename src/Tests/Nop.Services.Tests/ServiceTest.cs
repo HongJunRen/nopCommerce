@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using Nop.Core;
+using Nop.Core.Infrastructure;
 using Nop.Core.Plugins;
 using Nop.Services.Tests.Directory;
 using Nop.Services.Tests.Discounts;
@@ -21,6 +23,8 @@ namespace Nop.Services.Tests
 
         private void InitPlugins()
         {
+            CommonHelper.BaseDirectory = new NopFileProvider(System.Reflection.Assembly.GetExecutingAssembly().Location).Root;
+
             PluginManager.ReferencedPlugins = new List<PluginDescriptor>
             {
                 new PluginDescriptor(typeof(FixedRateTestTaxProvider).Assembly)

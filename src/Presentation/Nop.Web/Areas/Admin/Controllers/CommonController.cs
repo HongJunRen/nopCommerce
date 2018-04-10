@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
 using Nop.Web.Areas.Admin.Models.Common;
@@ -271,9 +270,9 @@ namespace Nop.Web.Areas.Admin.Controllers
             
             var gridModel = new DataSourceResult
             {
-                Data = backupFiles.Select(p => new {p.Name,
-                    Length = $"{p.Length / 1024f / 1024f:F2} Mb",
-                    Link = _webHelper.GetStoreLocation(false) + "db_backups/" + p.Name
+                Data = backupFiles.Select(p => new {Name = _fileProvider.GetFileName(p),
+                    Length = $"{_fileProvider.GetFileSize(p) / 1024f / 1024f:F2} Mb",
+                    Link = _webHelper.GetStoreLocation(false) + "db_backups/" + _fileProvider.GetFileName(p)
                 }),
                 Total = backupFiles.Count
             };

@@ -292,7 +292,7 @@ namespace Nop.Web.Controllers
 
             if (ModelState.IsValid)
             {
-                var settingsManager = new DataSettingsManager();
+                var settingsManager = new DataSettingsManager(_fileProvider);
                 try
                 {
                     string connectionString;

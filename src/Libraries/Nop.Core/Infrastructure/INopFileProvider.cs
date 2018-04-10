@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.AccessControl;
 using System.Text;
 using Microsoft.Extensions.FileProviders;
 
@@ -123,6 +124,13 @@ namespace Nop.Core.Infrastructure
         string GetAbsolutePath(params string[] paths);
 
         /// <summary>
+        /// Gets a System.Security.AccessControl.DirectorySecurity object that encapsulates the access control list (ACL) entries for a specified directory
+        /// </summary>
+        /// <param name="path">The path to a directory containing a System.Security.AccessControl.DirectorySecurity object that describes the file's access control list (ACL) information</param>
+        /// <returns>An object that encapsulates the access control rules for the file described by the path parameter</returns>
+        DirectorySecurity GetAccessControl(string path);
+
+        /// <summary>
         /// Returns the creation date and time of the specified file or directory
         /// </summary>
         /// <param name="path">The file or directory for which to obtain creation date and time information</param>
@@ -161,6 +169,13 @@ namespace Nop.Core.Infrastructure
         /// System.String.Empty if path does not contain directory information
         /// </returns>
         string GetDirectoryName(string path);
+
+        /// <summary>
+        /// Returns the directory name only for the specified path string
+        /// </summary>
+        /// <param name="path">The path of directory</param>
+        /// <returns>The directory name</returns>
+        string GetDirectoryNameOnly(string path);
 
         /// <summary>
         /// Returns the extension of the specified path string
@@ -202,6 +217,13 @@ namespace Nop.Core.Infrastructure
         /// that match the specified search pattern, or an empty array if no files are found.
         /// </returns>
         string[] GetFiles(string directoryPath, string searchPattern = "", bool topDirectoryOnly = true);
+
+        /// <summary>
+        /// Gets the size, in bytes, of the file
+        /// </summary>
+        /// <param name="filePath">The path of the file</param>
+        /// <returns>The size of the file in bytes</returns>
+        long GetFileSize(string filePath);
 
         /// <summary>
         /// Returns the date and time the specified file or directory was last accessed

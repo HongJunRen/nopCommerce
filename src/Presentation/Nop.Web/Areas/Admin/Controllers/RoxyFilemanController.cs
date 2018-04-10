@@ -547,13 +547,13 @@ namespace Nop.Web.Areas.Admin.Controllers
             {
                 var width = 0;
                 var height = 0;
-                var file = new NopFileInfo(_fileProvider, files[i]);
+                var physicalPath = files[i];
 
                 if (GetFileType(_fileProvider.GetFileExtension(files[i])) == "image")
                 {
                     try
                     {
-                        using (var stream = new FileStream(file.PhysicalPath, FileMode.Open))
+                        using (var stream = new FileStream(physicalPath, FileMode.Open))
                         {
                             using (var image = Image.FromStream(stream))
                             {
@@ -567,7 +567,7 @@ namespace Nop.Web.Areas.Admin.Controllers
                         throw ex;
                     }
                 }
-                await HttpContext.Response.WriteAsync($"{{\"p\":\"{directoryPath.TrimEnd('/')}/{file.Name}\",\"t\":\"{Math.Ceiling(GetTimestamp(file.LastModified.DateTime))}\",\"s\":\"{file.Length}\",\"w\":\"{width}\",\"h\":\"{height}\"}}");
+                await HttpContext.Response.WriteAsync($"{{\"p\":\"{directoryPath.TrimEnd('/')}/{_fileProvider.GetFileName(physicalPath)}\",\"t\":\"{Math.Ceiling(GetTimestamp(_fileProvider.GetLastWriteTime(physicalPath)))}\",\"s\":\"{_fileProvider.GetFileSize(physicalPath)}\",\"w\":\"{width}\",\"h\":\"{height}\"}}");
 
                 if (i < files.Count - 1)
                     await HttpContext.Response.WriteAsync(",");

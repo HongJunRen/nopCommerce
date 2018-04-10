@@ -354,7 +354,7 @@ namespace Nop.Web.Framework.UI
                         var src = path.Value.TrimStart('/');
 
                         //check whether this file exists, if not it should be stored into /wwwroot directory
-                        if (!_fileProvider.FileExists(_fileProvider.GetAbsolutePath(src.Replace("/", "\\"))))
+                        if (!_fileProvider.FileExists(_fileProvider.MapPath(path)))
                             src = $"wwwroot/{src}";
 
                         bundle.InputFiles.Add(src);
