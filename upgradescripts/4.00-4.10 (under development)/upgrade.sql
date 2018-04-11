@@ -923,6 +923,12 @@ set @resources='
   <LocaleResource Name="Admin.Configuration.Settings.GeneralCommon.reCaptchaVersion.Hint">
     <Value></Value>
   </LocaleResource>
+  <LocaleResource Name="Common.WrongCaptchaV2">
+    <Value></Value>
+  </LocaleResource>
+  <LocaleResource Name="Common.WrongCaptcha">
+    <Value>The reCAPTCHA response is invalid or malformed. Please try again.</Value>
+  </LocaleResource>
 </Language>
 '
 
