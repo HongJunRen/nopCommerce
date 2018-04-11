@@ -14321,11 +14321,8 @@
   </LocaleResource>
   <LocaleResource Name="Common.Warning">
     <Value>Warning</Value>
-  </LocaleResource>
-  <LocaleResource Name="Common.WrongCaptcha">
-    <Value>The characters didn't match the picture. Please try again.</Value>
-  </LocaleResource>
-  <LocaleResource Name="Common.WrongCaptcha">
+  </LocaleResource>  
+  <LocaleResource Name="Common.WrongCaptchaMessage">
     <Value>The reCAPTCHA response is invalid or malformed. Please try again.</Value>
   </LocaleResource>
   <LocaleResource Name="Common.WrongEmail">

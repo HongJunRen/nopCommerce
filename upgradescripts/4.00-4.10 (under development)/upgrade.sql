@@ -927,6 +927,9 @@ set @resources='
     <Value></Value>
   </LocaleResource>
   <LocaleResource Name="Common.WrongCaptcha">
+    <Value></Value>
+  </LocaleResource>
+  <LocaleResource Name="Common.WrongCaptchaMessage">
     <Value>The reCAPTCHA response is invalid or malformed. Please try again.</Value>
   </LocaleResource>
 </Language>

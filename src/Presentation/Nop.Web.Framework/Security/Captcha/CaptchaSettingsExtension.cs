@@ -16,7 +16,7 @@ namespace Nop.Web.Framework.Security.Captcha
         public static string GetWrongCaptchaMessage(this CaptchaSettings captchaSettings,
             ILocalizationService localizationService)
         {
-            return localizationService.GetResource("Common.WrongCaptcha");           
+            return localizationService.GetResource("Common.WrongCaptchaMessage");           
         }
     }
 }
