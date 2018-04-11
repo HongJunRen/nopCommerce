@@ -48,6 +48,7 @@ namespace Nop.Web.Controllers
         public virtual IActionResult TopicDetails(int topicId)
         {
             var model = _topicModelFactory.PrepareTopicModelById(topicId);
+            //access to Topics preview
             if (model == null || (!_permissionService.Authorize(StandardPermissionProvider.ManageTopics) && !model.Published))
                 return RedirectToRoute("HomePage");            
 

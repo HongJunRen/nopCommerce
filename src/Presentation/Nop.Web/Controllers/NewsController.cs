@@ -121,24 +121,24 @@ namespace Nop.Web.Controllers
                 return RedirectToRoute("HomePage");
 
             var newsItem = _newsService.GetNewsById(newsItemId);
-            if (newsItem == null ||
-                 (
-                   (newsItem.StartDateUtc.HasValue && newsItem.StartDateUtc.Value >= DateTime.UtcNow) ||
-                   (newsItem.EndDateUtc.HasValue && newsItem.EndDateUtc.Value <= DateTime.UtcNow) ) && 
-                   !(_permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel) && _permissionService.Authorize(StandardPermissionProvider.ManageNews))
-               )
+            if (newsItem == null)
+                return RedirectToRoute("HomePage");
+
+            var isNotAuctualPublishDate = (newsItem.StartDateUtc.HasValue && newsItem.StartDateUtc.Value >= DateTime.UtcNow) ||
+                   (newsItem.EndDateUtc.HasValue && newsItem.EndDateUtc.Value <= DateTime.UtcNow);
+            var isNewsAccess = _permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel) && _permissionService.Authorize(StandardPermissionProvider.ManageNews);
+
+            //access to News preview
+            if ((!newsItem.Published || isNotAuctualPublishDate) && !isNewsAccess)
             {
                 return RedirectToRoute("HomePage");
-            }                       
-
-            if ((!newsItem.Published || !_storeMappingService.Authorize(newsItem)) && !_permissionService.Authorize(StandardPermissionProvider.ManageNews))
-                return RedirectToRoute("HomePage");
+            }            
 
             var model = new NewsItemModel();
             model = _newsModelFactory.PrepareNewsItemModel(model, newsItem, true);
 
             //display "edit" (manage) link
-            if (_permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel) && _permissionService.Authorize(StandardPermissionProvider.ManageNews))
+            if (isNewsAccess)
                 DisplayEditLink(Url.Action("Edit", "News", new { id = newsItem.Id, area = AreaNames.Admin }));
 
             return View(model);
