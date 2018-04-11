@@ -9,7 +9,7 @@ namespace Nop.Web.Framework.Security.Captcha
     /// </summary>
     public class GReCaptchaValidator
     {
-        private const string RECAPTCHA_VERIFY_URL_VERSION2 = "https://www.google.com/recaptcha/api/siteverify?secret={0}&response={1}&remoteip={2}";
+        private const string RECAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify?secret={0}&response={1}&remoteip={2}";
 
         /// <summary>
         /// reCAPTCHA secret key
@@ -55,7 +55,7 @@ namespace Nop.Web.Framework.Security.Captcha
             GReCaptchaResponse result = null;
             var httpClient = new HttpClient();
             var requestUri = string.Empty;
-            requestUri = string.Format(RECAPTCHA_VERIFY_URL_VERSION2, SecretKey, Response, RemoteIp);
+            requestUri = string.Format(RECAPTCHA_VERIFY_URL, SecretKey, Response, RemoteIp);
 
             try
             {
