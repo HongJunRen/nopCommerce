@@ -29,6 +29,7 @@ namespace Nop.Core.Domain.Blogs
                         parsedTags.Add(tmp);
                 }
             }
+
             return parsedTags.ToArray();
         }
 
@@ -62,6 +63,7 @@ namespace Nop.Core.Domain.Blogs
             {
                 return false;
             }
+
             return true;
         }
     }

@@ -126,10 +126,8 @@ namespace Nop.Web.Controllers
             
             var hasAdminAccess = _permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel) && _permissionService.Authorize(StandardPermissionProvider.ManageNews);
             //access to News preview
-            if ((!newsItem.Published || !newsItem.IsAvailable()) && !hasAdminAccess)
-            {
-                return RedirectToRoute("HomePage");
-            }            
+            if ((!newsItem.Published || !newsItem.IsAvailable()) && !hasAdminAccess)            
+                return RedirectToRoute("HomePage");                        
 
             var model = new NewsItemModel();
             model = _newsModelFactory.PrepareNewsItemModel(model, newsItem, true);

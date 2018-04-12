@@ -37,6 +37,7 @@ namespace Nop.Core.Domain.News
             {
                 return false;
             }
+
             return true;
         }
     }
