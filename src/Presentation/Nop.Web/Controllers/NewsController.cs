@@ -123,13 +123,10 @@ namespace Nop.Web.Controllers
             var newsItem = _newsService.GetNewsById(newsItemId);
             if (newsItem == null)
                 return RedirectToRoute("HomePage");
-
-            var isNotAuctualPublishDate = (newsItem.StartDateUtc.HasValue && newsItem.StartDateUtc.Value >= DateTime.UtcNow) ||
-                   (newsItem.EndDateUtc.HasValue && newsItem.EndDateUtc.Value <= DateTime.UtcNow);
-            var isNewsAccess = _permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel) && _permissionService.Authorize(StandardPermissionProvider.ManageNews);
-
+            
+            var hasAdminAccess = _permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel) && _permissionService.Authorize(StandardPermissionProvider.ManageNews);
             //access to News preview
-            if ((!newsItem.Published || isNotAuctualPublishDate) && !isNewsAccess)
+            if ((!newsItem.Published || !newsItem.IsAvailable()) && !hasAdminAccess)
             {
                 return RedirectToRoute("HomePage");
             }            
@@ -138,7 +135,7 @@ namespace Nop.Web.Controllers
             model = _newsModelFactory.PrepareNewsItemModel(model, newsItem, true);
 
             //display "edit" (manage) link
-            if (isNewsAccess)
+            if (hasAdminAccess)
                 DisplayEditLink(Url.Action("Edit", "News", new { id = newsItem.Id, area = AreaNames.Admin }));
 
             return View(model);

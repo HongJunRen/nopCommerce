@@ -144,13 +144,10 @@ namespace Nop.Web.Controllers
             var blogPost = _blogService.GetBlogPostById(blogPostId);
             if (blogPost == null)
                 return RedirectToRoute("HomePage");
-
-            var isNotAuctualPublishDate = (blogPost.StartDateUtc.HasValue && blogPost.StartDateUtc.Value >= DateTime.UtcNow) ||
-                (blogPost.EndDateUtc.HasValue && blogPost.EndDateUtc.Value <= DateTime.UtcNow);
-            var isBlogAccess = _permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel) && _permissionService.Authorize(StandardPermissionProvider.ManageBlog);
-
+            
+            var hasAdminAccess = _permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel) && _permissionService.Authorize(StandardPermissionProvider.ManageBlog);
             //access to Blog preview
-            if (isNotAuctualPublishDate && !isBlogAccess)
+            if (!blogPost.IsAvailable() && !hasAdminAccess)
                 return RedirectToRoute("HomePage");
 
             //Store mapping
@@ -158,7 +155,7 @@ namespace Nop.Web.Controllers
                 return InvokeHttp404();
             
             //display "edit" (manage) link
-            if (isBlogAccess)
+            if (hasAdminAccess)
                 DisplayEditLink(Url.Action("Edit", "Blog", new { id = blogPost.Id, area = AreaNames.Admin }));
 
             var model = new BlogPostModel();
