@@ -147,14 +147,11 @@ namespace Nop.Core.Infrastructure
             //most of API providers require TLS 1.2 nowadays
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
-            //set base application path
+            //initialize plugins
             var provider = services.BuildServiceProvider();
             var nopConfig = provider.GetRequiredService<NopConfig>();
             var hostingEnvironment = provider.GetRequiredService<IHostingEnvironment>();
-
-            CommonHelper.BaseDirectory = hostingEnvironment.ContentRootPath;
-
-            //initialize plugins
+            CommonHelper.DefaultFileProvider = new NopFileProvider(hostingEnvironment);
             var mvcCoreBuilder = services.AddMvcCore();
             PluginManager.Initialize(mvcCoreBuilder.PartManager, nopConfig);
         }
@@ -180,13 +177,8 @@ namespace Nop.Core.Infrastructure
         /// <returns>Service provider</returns>
         public IServiceProvider ConfigureServices(IServiceCollection services, IConfigurationRoot configuration)
         {
-            var serviceProvider = services.BuildServiceProvider();
-
-            //we create the file provider manually, since the DI isn't initialized yet
-            var fileProvider = new NopFileProvider(CommonHelper.BaseDirectory);
-
             //find startup configurations provided by other assemblies
-            var typeFinder = new WebAppTypeFinder(fileProvider);
+            var typeFinder = new WebAppTypeFinder();
             var startupConfigurations = typeFinder.FindClassesOfType<INopStartup>();
 
             //create and sort instances of startup configurations
@@ -203,7 +195,7 @@ namespace Nop.Core.Infrastructure
             AddAutoMapper(services, typeFinder);
 
             //register dependencies
-            var nopConfig = serviceProvider.GetService<NopConfig>();
+            var nopConfig = services.BuildServiceProvider().GetService<NopConfig>();
             RegisterDependencies(nopConfig, services, typeFinder);
 
             //run startup tasks
@@ -212,8 +204,9 @@ namespace Nop.Core.Infrastructure
 
             //resolve assemblies here. otherwise, plugins can throw an exception when rendering views
             AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
-            
+
             //set App_Data path as base data directory (required to create and save SQL Server Compact database file in App_Data folder)
+            var fileProvider = Resolve<INopFileProvider>();
             AppDomain.CurrentDomain.SetData("DataDirectory", fileProvider.MapPath("~/App_Data/"));
 
             return _serviceProvider;

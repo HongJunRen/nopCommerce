@@ -44,7 +44,7 @@ namespace Nop.Core.Plugins
         static PluginManager()
         {
             //we create the file provider manually, since the DI isn't initialized yet
-            _fileProvider = new NopFileProvider(CommonHelper.BaseDirectory);
+            _fileProvider = CommonHelper.DefaultFileProvider;
 
             //get all libraries from /bin/{version}/ directory
             _baseAppLibraries =_fileProvider.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.dll").Select(fi => _fileProvider.GetFileName(fi)).ToList();

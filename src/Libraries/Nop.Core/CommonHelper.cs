@@ -357,9 +357,9 @@ namespace Nop.Core
         #region Properties
 
         /// <summary>
-        /// Gets or sets application base path
+        /// Gets or sets the default file provider
         /// </summary>
-        public static string BaseDirectory { get; set; }
+        public static INopFileProvider DefaultFileProvider { get; set; }
 
         #endregion
 

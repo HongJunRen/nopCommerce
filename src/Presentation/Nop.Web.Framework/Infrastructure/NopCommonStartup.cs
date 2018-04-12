@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Net.Http.Headers;
 using Nop.Core;
 using Nop.Core.Configuration;
@@ -88,7 +89,7 @@ namespace Nop.Web.Framework.Infrastructure
             //themes
             application.UseStaticFiles(new StaticFileOptions
             {
-                FileProvider = new NopFileProvider(fileProvider.MapPath(@"Themes")),
+                FileProvider = new PhysicalFileProvider(fileProvider.MapPath(@"Themes")),
                 RequestPath = new PathString("/Themes"),
                 OnPrepareResponse = ctx =>
                 {
@@ -100,7 +101,7 @@ namespace Nop.Web.Framework.Infrastructure
             //plugins
             var staticFileOptions = new StaticFileOptions
             {
-                FileProvider = new NopFileProvider(fileProvider.MapPath(@"Plugins")),
+                FileProvider = new PhysicalFileProvider(fileProvider.MapPath(@"Plugins")),
                 RequestPath = new PathString("/Plugins"),
                 OnPrepareResponse = ctx =>
                 {
@@ -139,7 +140,7 @@ namespace Nop.Web.Framework.Infrastructure
 
             application.UseStaticFiles(new StaticFileOptions
             {
-                FileProvider = new NopFileProvider(fileProvider.GetAbsolutePath("db_backups")),
+                FileProvider = new PhysicalFileProvider(fileProvider.GetAbsolutePath("db_backups")),
                 RequestPath = new PathString("/db_backups"),
                 ContentTypeProvider = provider
             });

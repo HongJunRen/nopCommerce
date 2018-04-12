@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Nop.Core;
@@ -21,11 +20,10 @@ namespace Nop.Web.MVC.Tests.Events
         [OneTimeSetUp]
         public void SetUp()
         {
-            CommonHelper.BaseDirectory = new NopFileProvider(System.Reflection.Assembly.GetExecutingAssembly().Location).Root;
-
             var hostingEnvironment = MockRepository.GenerateMock<IHostingEnvironment>();
-
-            hostingEnvironment.Expect(x => x.WebRootPath).Return(Directory.GetCurrentDirectory());
+            hostingEnvironment.Expect(x => x.ContentRootPath).Return(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            hostingEnvironment.Expect(x => x.WebRootPath).Return(System.IO.Directory.GetCurrentDirectory());
+            CommonHelper.DefaultFileProvider = new NopFileProvider(hostingEnvironment);
             PluginManager.Initialize(new ApplicationPartManager(), new NopConfig());
 
             var subscriptionService = MockRepository.GenerateMock<ISubscriptionService>();

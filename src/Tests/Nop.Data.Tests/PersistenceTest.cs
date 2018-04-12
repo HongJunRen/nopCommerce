@@ -1,8 +1,10 @@
 ﻿using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
+using Microsoft.AspNetCore.Hosting;
 using Nop.Core;
 using Nop.Core.Infrastructure;
 using NUnit.Framework;
+using Rhino.Mocks;
 
 namespace Nop.Data.Tests
 {
@@ -24,7 +26,11 @@ namespace Nop.Data.Tests
 
         protected string GetTestDbName()
         {
-            var fileProvider = new NopFileProvider(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            var hostingEnvironment = MockRepository.GenerateMock<IHostingEnvironment>();
+            hostingEnvironment.Expect(x => x.ContentRootPath).Return(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            hostingEnvironment.Expect(x => x.WebRootPath).Return(System.IO.Directory.GetCurrentDirectory());
+            var fileProvider = new NopFileProvider(hostingEnvironment);
+            
             var testDbName = "Data Source=" + fileProvider.GetAbsolutePath() + @"\\Nop.Data.Tests.Db.sdf;Persist Security Info=False";
             return testDbName;
         }        

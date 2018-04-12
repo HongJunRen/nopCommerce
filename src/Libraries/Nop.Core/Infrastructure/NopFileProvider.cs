@@ -22,16 +22,7 @@ namespace Nop.Core.Infrastructure
         {
             BaseDirectory = hostingEnvironment.ContentRootPath ?? string.Empty;
         }
-
-        /// <summary>
-        /// Initializes a new instance of a NopFileProvider
-        /// </summary>
-        /// <param name="root">The root directory. This should be an absolute path</param>
-        public NopFileProvider(string root) : base(Directory.Exists(root) ? root : Path.GetDirectoryName(root))
-        {
-            BaseDirectory = Directory.Exists(root) ? root : Path.GetDirectoryName(root);
-        }
-
+        
         protected string BaseDirectory { get; }
 
         /// <summary>

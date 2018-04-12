@@ -23,9 +23,9 @@ namespace Nop.Core.Infrastructure
 
         #region Ctor
 
-        public AppDomainTypeFinder(INopFileProvider fileProvider)
+        public AppDomainTypeFinder(INopFileProvider fileProvider = null)
         {
-            this._fileProvider = fileProvider;
+            this._fileProvider = fileProvider ?? CommonHelper.DefaultFileProvider;
         }
 
         #endregion

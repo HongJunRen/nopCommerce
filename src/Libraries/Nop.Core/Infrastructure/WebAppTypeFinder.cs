@@ -19,7 +19,7 @@ namespace Nop.Core.Infrastructure
 
         #region Ctor
 
-        public WebAppTypeFinder(INopFileProvider fileProvider) : base(fileProvider)
+        public WebAppTypeFinder(INopFileProvider fileProvider = null) : base(fileProvider)
         {
         }
 

@@ -37,7 +37,7 @@ namespace Nop.Core.Data
 
         public DataSettingsManager(INopFileProvider fileProvider = null)
         {
-            this._fileProvider = fileProvider ?? new NopFileProvider(CommonHelper.BaseDirectory);
+            this._fileProvider = fileProvider ?? CommonHelper.DefaultFileProvider;
         }
 
         #endregion
