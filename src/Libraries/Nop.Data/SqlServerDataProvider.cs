@@ -38,8 +38,7 @@ namespace Nop.Data
             }
 
             var statements = new List<string>();
-            using (var stream = fileProvider.OpenRead(filePath))
-            using (var reader = new StreamReader(stream))
+            using (var reader = new StreamReader(filePath))
             {
                 string statement;
                 while ((statement = ReadNextStatementFromStream(reader)) != null)

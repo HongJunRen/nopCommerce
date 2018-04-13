@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Security.AccessControl;
 using System.Text;
 using Microsoft.Extensions.FileProviders;
@@ -29,8 +28,7 @@ namespace Nop.Core.Infrastructure
         /// Creates or overwrites a file in the specified path
         /// </summary>
         /// <param name="path">The path and name of the file to create</param>
-        /// <returns>A System.IO.Stream that provides read/write access to the file specified in path</returns>
-        Stream CreateFile(string path);
+        void CreateFile(string path);
 
         /// <summary>
         /// Depth-first recursive delete, with handling for descendant directories open in Windows Explorer.
@@ -273,14 +271,7 @@ namespace Nop.Core.Infrastructure
         /// <param name="path">The path to map. E.g. "~/bin"</param>
         /// <returns>The physical path. E.g. "c:\inetpub\wwwroot\bin"</returns>
         string MapPath(string path);
-
-        /// <summary>
-        /// Opens an existing file for reading
-        /// </summary>
-        /// <param name="path">The file to be opened for reading</param>
-        /// <returns>A read-only System.IO.Stream on the specified path</returns>
-        Stream OpenRead(string path);
-
+        
         /// <summary>
         /// Reads the contents of the file into a byte array
         /// </summary>

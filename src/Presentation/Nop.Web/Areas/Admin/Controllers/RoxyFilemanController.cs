@@ -82,13 +82,9 @@ namespace Nop.Web.Areas.Admin.Controllers
         public virtual void CreateConfiguration()
         {
             var filePath = GetFullPath(CONFIGURATION_FILE);
-            
+
             //create file if not exists
-            if (!_fileProvider.FileExists(filePath))
-            {
-                //we use 'using' to close the file after it's created
-                using (_fileProvider.CreateFile(filePath)) { }
-            }
+            _fileProvider.CreateFile(filePath);
 
             //try to read existing configuration
             var existingText = _fileProvider.ReadAllText(filePath, Encoding.UTF8);

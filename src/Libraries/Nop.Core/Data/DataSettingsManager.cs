@@ -124,11 +124,7 @@ namespace Nop.Core.Data
             var filePath = _fileProvider.MapPath(DataSettingsFilePath);
 
             //create file if not exists
-            if (!_fileProvider.FileExists(filePath))
-            {
-                //we use 'using' to close the file after it's created
-                using (_fileProvider.CreateFile(filePath)) { }
-            }
+            _fileProvider.CreateFile(filePath);
 
             //save data settings to the file
             var text = JsonConvert.SerializeObject(Singleton<DataSettings>.Instance, Formatting.Indented);

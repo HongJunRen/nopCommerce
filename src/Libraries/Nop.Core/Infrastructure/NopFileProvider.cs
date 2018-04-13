@@ -49,10 +49,11 @@ namespace Nop.Core.Infrastructure
         /// Creates or overwrites a file in the specified path
         /// </summary>
         /// <param name="path">The path and name of the file to create</param>
-        /// <returns>A System.IO.Stream that provides read/write access to the file specified in path</returns>
-        public virtual Stream CreateFile(string path)
+        public virtual void CreateFile(string path)
         {
-            return File.Create(path);
+            //we use 'using' to close the file after it's created
+            if (!FileExists(path))
+                using (File.Create(path)) { }
         }
 
         /// <summary>
@@ -413,17 +414,7 @@ namespace Nop.Core.Infrastructure
             path = path.Replace("~/", "").TrimStart('/').Replace('/', '\\');
             return Path.Combine(BaseDirectory ?? string.Empty, path);
         }
-
-        /// <summary>
-        /// Opens an existing file for reading
-        /// </summary>
-        /// <param name="path">The file to be opened for reading</param>
-        /// <returns>A read-only System.IO.Stream on the specified path</returns>
-        public virtual Stream OpenRead(string path)
-        {
-            return File.OpenRead(path);
-        }
-
+        
         /// <summary>
         /// Reads the contents of the file into a byte array
         /// </summary>

@@ -549,11 +549,7 @@ namespace Nop.Core.Plugins
             var filePath = _fileProvider.MapPath(InstalledPluginsFilePath);
 
             //create file if not exists
-            if (!_fileProvider.FileExists(filePath))
-            {
-                //we use 'using' to close the file after it's created
-                using (_fileProvider.CreateFile(filePath)) { }
-            }
+            _fileProvider.CreateFile(filePath);
 
             //get installed plugin names
             var installedPluginSystemNames = GetInstalledPluginNames(filePath);
@@ -579,11 +575,7 @@ namespace Nop.Core.Plugins
             var filePath = _fileProvider.MapPath(InstalledPluginsFilePath);
 
             //create file if not exists
-            if (!_fileProvider.FileExists(filePath))
-            {
-                //we use 'using' to close the file after it's created
-                using (_fileProvider.CreateFile(filePath)) { }
-            }
+            _fileProvider.CreateFile(filePath);
 
             //get installed plugin names
             var installedPluginSystemNames = GetInstalledPluginNames(filePath);

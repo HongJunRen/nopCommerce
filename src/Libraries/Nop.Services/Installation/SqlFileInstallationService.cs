@@ -119,9 +119,8 @@ namespace Nop.Services.Installation
         protected virtual void ExecuteSqlFile(string path)
         {
             var statements = new List<string>();
-
-            using (var stream = _fileProvider.OpenRead(path))
-            using (var reader = new StreamReader(stream))
+            
+            using (var reader = new StreamReader(path))
             {
                 string statement;
                 while ((statement = ReadNextStatementFromStream(reader)) != null)
