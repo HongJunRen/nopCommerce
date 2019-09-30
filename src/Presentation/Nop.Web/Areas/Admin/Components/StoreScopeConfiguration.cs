@@ -19,7 +19,7 @@ namespace Nop.Web.Areas.Admin.Components
 
         public StoreScopeConfigurationViewComponent(ISettingModelFactory settingModelFactory)
         {
-            this._settingModelFactory = settingModelFactory;
+            _settingModelFactory = settingModelFactory;
         }
 
         #endregion
@@ -36,7 +36,7 @@ namespace Nop.Web.Areas.Admin.Components
             var model = _settingModelFactory.PrepareStoreScopeConfigurationModel();
 
             if (model.Stores.Count < 2)
-                return Content("");
+                return Content(string.Empty);
             
             return View(model);
         }

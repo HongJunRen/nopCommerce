@@ -25,9 +25,9 @@ namespace Nop.Web.Areas.Admin.Components
             IPermissionService permissionService,
             IWorkContext workContext)
         {
-            this._commonModelFactory = commonModelFactory;
-            this._permissionService = permissionService;
-            this._workContext = workContext;
+            _commonModelFactory = commonModelFactory;
+            _permissionService = permissionService;
+            _workContext = workContext;
         }
 
         #endregion
@@ -45,12 +45,12 @@ namespace Nop.Web.Areas.Admin.Components
                 !_permissionService.Authorize(StandardPermissionProvider.ManageReturnRequests) ||
                 !_permissionService.Authorize(StandardPermissionProvider.ManageProducts))
             {
-                return Content("");
+                return Content(string.Empty);
             }
 
             //a vendor doesn't have access to this report
             if (_workContext.CurrentVendor != null)
-                return Content("");
+                return Content(string.Empty);
 
             //prepare model
             var model = _commonModelFactory.PrepareCommonStatisticsModel();

@@ -1,26 +1,16 @@
-﻿using System.Collections.Generic;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Nop.Web.Framework.Models;
+﻿using Nop.Web.Framework.Models;
 using Nop.Web.Framework.Mvc.ModelBinding;
-using Nop.Web.Framework.Security.Captcha;
 
 namespace Nop.Web.Areas.Admin.Models.Settings
 {
     /// <summary>
     /// Represents a CAPTCHA settings model
     /// </summary>
-    public partial class CaptchaSettingsModel : BaseNopModel
+    public partial class CaptchaSettingsModel : BaseNopModel, ISettingsModel
     {
-        #region Ctor
-
-        public CaptchaSettingsModel()
-        {
-            this.AvailableReCaptchaVersions = new List<SelectListItem>();
-        }
-
-        #endregion
-
         #region Properties
+
+        public int ActiveStoreScopeConfiguration { get; set; }
 
         [NopResourceDisplayName("Admin.Configuration.Settings.GeneralCommon.CaptchaEnabled")]
         public bool Enabled { get; set; }
@@ -62,19 +52,21 @@ namespace Nop.Web.Areas.Admin.Models.Settings
         public bool ShowOnApplyVendorPage { get; set; }
         public bool ShowOnApplyVendorPage_OverrideForStore { get; set; }
 
+        [NopResourceDisplayName("Admin.Configuration.Settings.GeneralCommon.CaptchaShowOnForgotPasswordPage")]
+        public bool ShowOnForgotPasswordPage { get; set; }
+        public bool ShowOnForgotPasswordPage_OverrideForStore { get; set; }
+
+        [NopResourceDisplayName("Admin.Configuration.Settings.GeneralCommon.CaptchaShowOnForum")]
+        public bool ShowOnForum { get; set; }
+        public bool ShowOnForum_OverrideForStore { get; set; }
+
         [NopResourceDisplayName("Admin.Configuration.Settings.GeneralCommon.reCaptchaPublicKey")]
         public string ReCaptchaPublicKey { get; set; }
         public bool ReCaptchaPublicKey_OverrideForStore { get; set; }
 
         [NopResourceDisplayName("Admin.Configuration.Settings.GeneralCommon.reCaptchaPrivateKey")]
         public string ReCaptchaPrivateKey { get; set; }
-        public bool ReCaptchaPrivateKey_OverrideForStore { get; set; }
-
-        [NopResourceDisplayName("Admin.Configuration.Settings.GeneralCommon.reCaptchaVersion")]
-        public ReCaptchaVersion ReCaptchaVersion { get; set; }
-        public bool ReCaptchaVersion_OverrideForStore { get; set; }
-
-        public IList<SelectListItem> AvailableReCaptchaVersions { get; set; }
+        public bool ReCaptchaPrivateKey_OverrideForStore { get; set; }        
 
         #endregion
     }

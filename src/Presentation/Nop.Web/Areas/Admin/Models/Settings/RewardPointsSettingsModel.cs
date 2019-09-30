@@ -7,7 +7,7 @@ namespace Nop.Web.Areas.Admin.Models.Settings
     /// <summary>
     /// Represents a reward points settings model
     /// </summary>
-    public partial class RewardPointsSettingsModel : BaseNopModel
+    public partial class RewardPointsSettingsModel : BaseNopModel, ISettingsModel
     {
         #region Properties
 
@@ -24,6 +24,10 @@ namespace Nop.Web.Areas.Admin.Models.Settings
         [NopResourceDisplayName("Admin.Configuration.Settings.RewardPoints.MinimumRewardPointsToUse")]
         public int MinimumRewardPointsToUse { get; set; }
         public bool MinimumRewardPointsToUse_OverrideForStore { get; set; }
+
+        [NopResourceDisplayName("Admin.Configuration.Settings.RewardPoints.MaximumRewardPointsToUsePerOrder")]
+        public int MaximumRewardPointsToUsePerOrder { get; set; }
+        public bool MaximumRewardPointsToUsePerOrder_OverrideForStore { get; set; }
 
         [NopResourceDisplayName("Admin.Configuration.Settings.RewardPoints.PointsForRegistration")]
         public int PointsForRegistration { get; set; }

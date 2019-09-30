@@ -7,11 +7,12 @@ using Nop.Core.Domain.Orders;
 using Nop.Services.Directory;
 using Nop.Services.Localization;
 using Nop.Services.Logging;
+using Nop.Services.Messages;
 using Nop.Services.Orders;
 using Nop.Services.Security;
 using Nop.Services.Stores;
-using Nop.Web.Areas.Admin.Extensions;
 using Nop.Web.Areas.Admin.Factories;
+using Nop.Web.Areas.Admin.Infrastructure.Mapper.Extensions;
 using Nop.Web.Areas.Admin.Models.Orders;
 using Nop.Web.Framework.Mvc;
 using Nop.Web.Framework.Mvc.Filters;
@@ -30,6 +31,7 @@ namespace Nop.Web.Areas.Admin.Controllers
         private readonly ICustomerActivityService _customerActivityService;
         private readonly ILocalizationService _localizationService;
         private readonly ILocalizedEntityService _localizedEntityService;
+        private readonly INotificationService _notificationService;
         private readonly IMeasureService _measureService;
         private readonly IPermissionService _permissionService;
         private readonly IStoreMappingService _storeMappingService;
@@ -48,25 +50,27 @@ namespace Nop.Web.Areas.Admin.Controllers
             ICustomerActivityService customerActivityService,
             ILocalizationService localizationService,
             ILocalizedEntityService localizedEntityService,
+            INotificationService notificationService,
             IMeasureService measureService,
             IPermissionService permissionService,
             IStoreMappingService storeMappingService,
             IStoreService storeService,
             MeasureSettings measureSettings)
         {
-            this._checkoutAttributeModelFactory = checkoutAttributeModelFactory;
-            this._checkoutAttributeParser = checkoutAttributeParser;
-            this._checkoutAttributeService = checkoutAttributeService;
-            this._currencyService = currencyService;
-            this._currencySettings = currencySettings;
-            this._customerActivityService = customerActivityService;
-            this._localizationService = localizationService;
-            this._localizedEntityService = localizedEntityService;
-            this._measureService = measureService;
-            this._measureSettings = measureSettings;
-            this._permissionService = permissionService;
-            this._storeMappingService = storeMappingService;
-            this._storeService = storeService;
+            _currencySettings = currencySettings;
+            _checkoutAttributeModelFactory = checkoutAttributeModelFactory;
+            _checkoutAttributeParser = checkoutAttributeParser;
+            _checkoutAttributeService = checkoutAttributeService;
+            _currencyService = currencyService;
+            _customerActivityService = customerActivityService;
+            _localizationService = localizationService;
+            _localizedEntityService = localizedEntityService;
+            _notificationService = notificationService;
+            _measureService = measureService;
+            _permissionService = permissionService;
+            _storeMappingService = storeMappingService;
+            _storeService = storeService;
+            _measureSettings = measureSettings;
         }
 
         #endregion
@@ -85,6 +89,11 @@ namespace Nop.Web.Areas.Admin.Controllers
                 _localizedEntityService.SaveLocalizedValue(checkoutAttribute,
                     x => x.TextPrompt,
                     localized.TextPrompt,
+                    localized.LanguageId);
+
+                _localizedEntityService.SaveLocalizedValue(checkoutAttribute,
+                    x => x.DefaultValue,
+                    localized.DefaultValue,
                     localized.LanguageId);
             }
         }
@@ -127,6 +136,7 @@ namespace Nop.Web.Areas.Admin.Controllers
         protected virtual void SaveConditionAttributes(CheckoutAttribute checkoutAttribute, CheckoutAttributeModel model)
         {
             string attributesXml = null;
+
             if (model.ConditionModel.EnableCondition)
             {
                 var attribute = _checkoutAttributeService.GetCheckoutAttributeById(model.ConditionModel.SelectedAttributeId);
@@ -141,26 +151,28 @@ namespace Nop.Web.Areas.Admin.Controllers
                             {
                                 var selectedAttribute = model.ConditionModel.ConditionAttributes
                                     .FirstOrDefault(x => x.Id == model.ConditionModel.SelectedAttributeId);
-                                var selectedValue = selectedAttribute != null ? selectedAttribute.SelectedValueId : null;
-                                if (!string.IsNullOrEmpty(selectedValue))
-                                    attributesXml = _checkoutAttributeParser.AddCheckoutAttribute(attributesXml, attribute, selectedValue);
-                                else
-                                    //for conditions we should empty values save even when nothing is selected
-                                    //otherwise "attributesXml" will be empty
-                                    //hence we won't be able to find a selected attribute
-                                    attributesXml = _checkoutAttributeParser.AddCheckoutAttribute(attributesXml, attribute, string.Empty);
+                                var selectedValue = selectedAttribute?.SelectedValueId;
+
+                                //for conditions we should empty values save even when nothing is selected
+                                //otherwise "attributesXml" will be empty
+                                //hence we won't be able to find a selected attribute
+                                attributesXml = _checkoutAttributeParser.AddCheckoutAttribute(null, attribute, string.IsNullOrEmpty(selectedValue) ? string.Empty : selectedValue);
                             }
                             break;
                         case AttributeControlType.Checkboxes:
                             {
                                 var selectedAttribute = model.ConditionModel.ConditionAttributes
                                     .FirstOrDefault(x => x.Id == model.ConditionModel.SelectedAttributeId);
-                                var selectedValues = selectedAttribute != null ? selectedAttribute.Values.Where(x => x.Selected).Select(x => x.Value) : null;
-                                if (selectedValues.Any())
+                                var selectedValues = selectedAttribute?.Values
+                                    .Where(x => x.Selected)
+                                    .Select(x => x.Value)
+                                    .ToList();
+
+                                if (selectedValues?.Any() ?? false)
                                     foreach (var value in selectedValues)
                                         attributesXml = _checkoutAttributeParser.AddCheckoutAttribute(attributesXml, attribute, value);
                                 else
-                                    attributesXml = _checkoutAttributeParser.AddCheckoutAttribute(attributesXml, attribute, string.Empty);
+                                    attributesXml = _checkoutAttributeParser.AddCheckoutAttribute(null, attribute, string.Empty);
                             }
                             break;
                         case AttributeControlType.ReadonlyCheckboxes:
@@ -174,6 +186,7 @@ namespace Nop.Web.Areas.Admin.Controllers
                     }
                 }
             }
+
             checkoutAttribute.ConditionAttributeXml = attributesXml;
         }
 
@@ -201,7 +214,7 @@ namespace Nop.Web.Areas.Admin.Controllers
         public virtual IActionResult List(CheckoutAttributeSearchModel searchModel)
         {
             if (!_permissionService.Authorize(StandardPermissionProvider.ManageAttributes))
-                return AccessDeniedKendoGridJson();
+                return AccessDeniedDataTablesJson();
 
             //prepare model
             var model = _checkoutAttributeModelFactory.PrepareCheckoutAttributeListModel(searchModel);
@@ -228,35 +241,31 @@ namespace Nop.Web.Areas.Admin.Controllers
 
             if (ModelState.IsValid)
             {
-                var checkoutAttribute = model.ToEntity();
+                var checkoutAttribute = model.ToEntity<CheckoutAttribute>();
                 _checkoutAttributeService.InsertCheckoutAttribute(checkoutAttribute);
 
                 //locales
                 UpdateAttributeLocales(checkoutAttribute, model);
 
-                //Stores
+                //stores
                 SaveStoreMappings(checkoutAttribute, model);
 
                 //activity log
                 _customerActivityService.InsertActivity("AddNewCheckoutAttribute",
                     string.Format(_localizationService.GetResource("ActivityLog.AddNewCheckoutAttribute"), checkoutAttribute.Name), checkoutAttribute);
 
-                SuccessNotification(_localizationService.GetResource("Admin.Catalog.Attributes.CheckoutAttributes.Added"));
+                _notificationService.SuccessNotification(_localizationService.GetResource("Admin.Catalog.Attributes.CheckoutAttributes.Added"));
 
-                if (continueEditing)
-                {
-                    //selected tab
-                    SaveSelectedTabName();
-
-                    return RedirectToAction("Edit", new { id = checkoutAttribute.Id });
-                }
-
-                return RedirectToAction("List");
+                if (!continueEditing)
+                    return RedirectToAction("List");
+                
+                return RedirectToAction("Edit", new { id = checkoutAttribute.Id });
             }
 
-            //If we got this far, something failed, redisplay form
+            //prepare model
             model = _checkoutAttributeModelFactory.PrepareCheckoutAttributeModel(model, null, true);
 
+            //if we got this far, something failed, redisplay form
             return View(model);
         }
 
@@ -296,29 +305,25 @@ namespace Nop.Web.Areas.Admin.Controllers
                 //locales
                 UpdateAttributeLocales(checkoutAttribute, model);
 
-                //Stores
+                //stores
                 SaveStoreMappings(checkoutAttribute, model);
 
                 //activity log
                 _customerActivityService.InsertActivity("EditCheckoutAttribute",
                     string.Format(_localizationService.GetResource("ActivityLog.EditCheckoutAttribute"), checkoutAttribute.Name), checkoutAttribute);
 
-                SuccessNotification(_localizationService.GetResource("Admin.Catalog.Attributes.CheckoutAttributes.Updated"));
+                _notificationService.SuccessNotification(_localizationService.GetResource("Admin.Catalog.Attributes.CheckoutAttributes.Updated"));
 
-                if (continueEditing)
-                {
-                    //selected tab
-                    SaveSelectedTabName();
-
-                    return RedirectToAction("Edit", new { id = checkoutAttribute.Id });
-                }
-
-                return RedirectToAction("List");
+                if (!continueEditing)
+                    return RedirectToAction("List");
+                
+                return RedirectToAction("Edit", new { id = checkoutAttribute.Id });
             }
-
-            //If we got this far, something failed, redisplay form
+            
+            //prepare model
             model = _checkoutAttributeModelFactory.PrepareCheckoutAttributeModel(model, checkoutAttribute, true);
 
+            //if we got this far, something failed, redisplay form
             return View(model);
         }
 
@@ -339,7 +344,7 @@ namespace Nop.Web.Areas.Admin.Controllers
             _customerActivityService.InsertActivity("DeleteCheckoutAttribute",
                 string.Format(_localizationService.GetResource("ActivityLog.DeleteCheckoutAttribute"), checkoutAttribute.Name), checkoutAttribute);
 
-            SuccessNotification(_localizationService.GetResource("Admin.Catalog.Attributes.CheckoutAttributes.Deleted"));
+            _notificationService.SuccessNotification(_localizationService.GetResource("Admin.Catalog.Attributes.CheckoutAttributes.Deleted"));
 
             return RedirectToAction("List");
         }
@@ -352,7 +357,7 @@ namespace Nop.Web.Areas.Admin.Controllers
         public virtual IActionResult ValueList(CheckoutAttributeValueSearchModel searchModel)
         {
             if (!_permissionService.Authorize(StandardPermissionProvider.ManageAttributes))
-                return AccessDeniedKendoGridJson();
+                return AccessDeniedDataTablesJson();
 
             //try to get a checkout attribute with the specified id
             var checkoutAttribute = _checkoutAttributeService.GetCheckoutAttributeById(searchModel.CheckoutAttributeId)
@@ -399,31 +404,22 @@ namespace Nop.Web.Areas.Admin.Controllers
             {
                 //ensure valid color is chosen/entered
                 if (string.IsNullOrEmpty(model.ColorSquaresRgb))
-                    ModelState.AddModelError("", "Color is required");
+                    ModelState.AddModelError(string.Empty, "Color is required");
 
                 try
                 {
-                    //ensure color is valid (can be instanciated)
+                    //ensure color is valid (can be instantiated)
                     System.Drawing.ColorTranslator.FromHtml(model.ColorSquaresRgb);
                 }
                 catch (Exception exc)
                 {
-                    ModelState.AddModelError("", exc.Message);
+                    ModelState.AddModelError(string.Empty, exc.Message);
                 }
             }
 
             if (ModelState.IsValid)
             {
-                var checkoutAttributeValue = new CheckoutAttributeValue
-                {
-                    CheckoutAttributeId = model.CheckoutAttributeId,
-                    Name = model.Name,
-                    ColorSquaresRgb = model.ColorSquaresRgb,
-                    PriceAdjustment = model.PriceAdjustment,
-                    WeightAdjustment = model.WeightAdjustment,
-                    IsPreSelected = model.IsPreSelected,
-                    DisplayOrder = model.DisplayOrder
-                };
+                var checkoutAttributeValue = model.ToEntity<CheckoutAttributeValue>();
                 _checkoutAttributeService.InsertCheckoutAttributeValue(checkoutAttributeValue);
 
                 UpdateValueLocales(checkoutAttributeValue, model);
@@ -433,9 +429,10 @@ namespace Nop.Web.Areas.Admin.Controllers
                 return View(model);
             }
 
-            //If we got this far, something failed, redisplay form
+            //prepare model
             model = _checkoutAttributeModelFactory.PrepareCheckoutAttributeValueModel(model, checkoutAttribute, null, true);
 
+            //if we got this far, something failed, redisplay form
             return View(model);
         }
 
@@ -483,27 +480,22 @@ namespace Nop.Web.Areas.Admin.Controllers
             {
                 //ensure valid color is chosen/entered
                 if (string.IsNullOrEmpty(model.ColorSquaresRgb))
-                    ModelState.AddModelError("", "Color is required");
+                    ModelState.AddModelError(string.Empty, "Color is required");
 
                 try
                 {
-                    //ensure color is valid (can be instanciated)
+                    //ensure color is valid (can be instantiated)
                     System.Drawing.ColorTranslator.FromHtml(model.ColorSquaresRgb);
                 }
                 catch (Exception exc)
                 {
-                    ModelState.AddModelError("", exc.Message);
+                    ModelState.AddModelError(string.Empty, exc.Message);
                 }
             }
 
             if (ModelState.IsValid)
             {
-                checkoutAttributeValue.Name = model.Name;
-                checkoutAttributeValue.ColorSquaresRgb = model.ColorSquaresRgb;
-                checkoutAttributeValue.PriceAdjustment = model.PriceAdjustment;
-                checkoutAttributeValue.WeightAdjustment = model.WeightAdjustment;
-                checkoutAttributeValue.IsPreSelected = model.IsPreSelected;
-                checkoutAttributeValue.DisplayOrder = model.DisplayOrder;
+                checkoutAttributeValue = model.ToEntity(checkoutAttributeValue);
                 _checkoutAttributeService.UpdateCheckoutAttributeValue(checkoutAttributeValue);
 
                 UpdateValueLocales(checkoutAttributeValue, model);
@@ -513,9 +505,10 @@ namespace Nop.Web.Areas.Admin.Controllers
                 return View(model);
             }
 
-            //If we got this far, something failed, redisplay form
+            //prepare model
             model = _checkoutAttributeModelFactory.PrepareCheckoutAttributeValueModel(model, checkoutAttribute, checkoutAttributeValue, true);
 
+            //if we got this far, something failed, redisplay form
             return View(model);
         }
 

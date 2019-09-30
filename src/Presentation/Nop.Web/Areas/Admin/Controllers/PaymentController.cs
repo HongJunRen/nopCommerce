@@ -1,19 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 using Nop.Core.Domain.Payments;
-using Nop.Core.Plugins;
 using Nop.Services.Configuration;
 using Nop.Services.Directory;
+using Nop.Services.Events;
 using Nop.Services.Localization;
+using Nop.Services.Messages;
 using Nop.Services.Payments;
 using Nop.Services.Plugins;
 using Nop.Services.Security;
 using Nop.Web.Areas.Admin.Factories;
 using Nop.Web.Areas.Admin.Models.Payments;
 using Nop.Web.Framework.Mvc;
+using Nop.Web.Framework.Mvc.Filters;
 
 namespace Nop.Web.Areas.Admin.Controllers
 {
@@ -22,11 +25,12 @@ namespace Nop.Web.Areas.Admin.Controllers
         #region Fields
 
         private readonly ICountryService _countryService;
+        private readonly IEventPublisher _eventPublisher;
         private readonly ILocalizationService _localizationService;
+        private readonly INotificationService _notificationService;
         private readonly IPaymentModelFactory _paymentModelFactory;
-        private readonly IPaymentService _paymentService;
+        private readonly IPaymentPluginManager _paymentPluginManager;
         private readonly IPermissionService _permissionService;
-        private readonly IPluginFinder _pluginFinder;
         private readonly ISettingService _settingService;
         private readonly PaymentSettings _paymentSettings;
 
@@ -35,27 +39,34 @@ namespace Nop.Web.Areas.Admin.Controllers
         #region Ctor
 
         public PaymentController(ICountryService countryService,
+            IEventPublisher eventPublisher,
             ILocalizationService localizationService,
+            INotificationService notificationService,
             IPaymentModelFactory paymentModelFactory,
-            IPaymentService paymentService,
+            IPaymentPluginManager paymentPluginManager,
             IPermissionService permissionService,
-            IPluginFinder pluginFinder,
             ISettingService settingService,
             PaymentSettings paymentSettings)
         {
-            this._countryService = countryService;
-            this._localizationService = localizationService;
-            this._paymentModelFactory = paymentModelFactory;
-            this._paymentService = paymentService;
-            this._permissionService = permissionService;
-            this._pluginFinder = pluginFinder;
-            this._settingService = settingService;
-            this._paymentSettings = paymentSettings;
+            _countryService = countryService;
+            _eventPublisher = eventPublisher;
+            _localizationService = localizationService;
+            _notificationService = notificationService;
+            _paymentModelFactory = paymentModelFactory;
+            _paymentPluginManager = paymentPluginManager;
+            _permissionService = permissionService;
+            _settingService = settingService;
+            _paymentSettings = paymentSettings;
         }
 
         #endregion
 
-        #region Methods
+        #region Methods  
+
+        public virtual IActionResult PaymentMethods()
+        {
+            return RedirectToAction("Methods");
+        }
 
         public virtual IActionResult Methods()
         {
@@ -63,7 +74,7 @@ namespace Nop.Web.Areas.Admin.Controllers
                 return AccessDeniedView();
 
             //prepare model
-            var model = _paymentModelFactory.PreparePaymentMethodSearchModel(new PaymentMethodSearchModel());
+            var model = _paymentModelFactory.PreparePaymentMethodsModel(new PaymentMethodsModel());
 
             return View(model);
         }
@@ -72,7 +83,7 @@ namespace Nop.Web.Areas.Admin.Controllers
         public virtual IActionResult Methods(PaymentMethodSearchModel searchModel)
         {
             if (!_permissionService.Authorize(StandardPermissionProvider.ManagePaymentMethods))
-                return AccessDeniedKendoGridJson();
+                return AccessDeniedDataTablesJson();
 
             //prepare model
             var model = _paymentModelFactory.PreparePaymentMethodListModel(searchModel);
@@ -86,8 +97,8 @@ namespace Nop.Web.Areas.Admin.Controllers
             if (!_permissionService.Authorize(StandardPermissionProvider.ManagePaymentMethods))
                 return AccessDeniedView();
 
-            var pm = _paymentService.LoadPaymentMethodBySystemName(model.SystemName);
-            if (pm.IsPaymentMethodActive(_paymentSettings))
+            var pm = _paymentPluginManager.LoadPluginBySystemName(model.SystemName);
+            if (_paymentPluginManager.IsPluginActive(pm))
             {
                 if (!model.IsActive)
                 {
@@ -105,15 +116,16 @@ namespace Nop.Web.Areas.Admin.Controllers
                     _settingService.SaveSetting(_paymentSettings);
                 }
             }
+
             var pluginDescriptor = pm.PluginDescriptor;
             pluginDescriptor.FriendlyName = model.FriendlyName;
             pluginDescriptor.DisplayOrder = model.DisplayOrder;
 
             //update the description file
-            PluginManager.SavePluginDescriptor(pluginDescriptor);
+            pluginDescriptor.Save();
 
-            //reset plugin cache
-            _pluginFinder.ReloadPlugins(pluginDescriptor);
+            //raise event
+            _eventPublisher.Publish(new PluginUpdatedEvent(pluginDescriptor));
 
             return new NullJsonResult();
         }
@@ -124,25 +136,29 @@ namespace Nop.Web.Areas.Admin.Controllers
                 return AccessDeniedView();
 
             //prepare model
-            var model = _paymentModelFactory.PreparePaymentMethodRestrictionModel(new PaymentMethodRestrictionModel());
+            var model = _paymentModelFactory.PreparePaymentMethodsModel(new PaymentMethodsModel());
 
             return View(model);
         }
 
+        //we ignore this filter for increase RequestFormLimits
+        [AdminAntiForgery(true)]
+        //we use 2048 value because in some cases default value (1024) is too small for this action
+        [RequestFormLimits(ValueCountLimit = 2048)]
         [HttpPost, ActionName("MethodRestrictions")]
-        public virtual IActionResult MethodRestrictionsSave(PaymentMethodRestrictionModel model)
+        public virtual IActionResult MethodRestrictionsSave(PaymentMethodsModel model, IFormCollection form)
         {
             if (!_permissionService.Authorize(StandardPermissionProvider.ManagePaymentMethods))
                 return AccessDeniedView();
 
-            var paymentMethods = _paymentService.LoadAllPaymentMethods();
+            var paymentMethods = _paymentPluginManager.LoadAllPlugins();
             var countries = _countryService.GetAllCountries(showHidden: true);
 
             foreach (var pm in paymentMethods)
             {
                 var formKey = "restrict_" + pm.PluginDescriptor.SystemName;
-                var countryIdsToRestrict = (!StringValues.IsNullOrEmpty(model.Form[formKey])
-                        ? model.Form[formKey].ToString().Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).ToList()
+                var countryIdsToRestrict = (!StringValues.IsNullOrEmpty(form[formKey])
+                        ? form[formKey].ToString().Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).ToList()
                         : new List<string>())
                     .Select(x => Convert.ToInt32(x)).ToList();
 
@@ -154,11 +170,12 @@ namespace Nop.Web.Areas.Admin.Controllers
                         newCountryIds.Add(c.Id);
                     }
                 }
-                _paymentService.SaveRestictedCountryIds(pm, newCountryIds);
+
+                _paymentPluginManager.SaveRestrictedCountries(pm, newCountryIds);
             }
 
-            SuccessNotification(_localizationService.GetResource("Admin.Configuration.Payment.MethodRestrictions.Updated"));
-
+            _notificationService.SuccessNotification(_localizationService.GetResource("Admin.Configuration.Payment.MethodRestrictions.Updated"));
+            
             return RedirectToAction("MethodRestrictions");
         }
 

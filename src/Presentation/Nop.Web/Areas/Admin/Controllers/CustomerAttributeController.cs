@@ -4,9 +4,10 @@ using Nop.Core.Domain.Customers;
 using Nop.Services.Customers;
 using Nop.Services.Localization;
 using Nop.Services.Logging;
+using Nop.Services.Messages;
 using Nop.Services.Security;
-using Nop.Web.Areas.Admin.Extensions;
 using Nop.Web.Areas.Admin.Factories;
+using Nop.Web.Areas.Admin.Infrastructure.Mapper.Extensions;
 using Nop.Web.Areas.Admin.Models.Customers;
 using Nop.Web.Framework.Mvc;
 using Nop.Web.Framework.Mvc.Filters;
@@ -17,30 +18,33 @@ namespace Nop.Web.Areas.Admin.Controllers
     {
         #region Fields
 
+        private readonly ICustomerActivityService _customerActivityService;
         private readonly ICustomerAttributeModelFactory _customerAttributeModelFactory;
         private readonly ICustomerAttributeService _customerAttributeService;
-        private readonly ILocalizedEntityService _localizedEntityService;
         private readonly ILocalizationService _localizationService;
+        private readonly ILocalizedEntityService _localizedEntityService;
+        private readonly INotificationService _notificationService;
         private readonly IPermissionService _permissionService;
-        private readonly ICustomerActivityService _customerActivityService;
 
         #endregion
 
         #region Ctor
 
-        public CustomerAttributeController(ICustomerAttributeModelFactory customerAttributeModelFactory,
+        public CustomerAttributeController(ICustomerActivityService customerActivityService,
+            ICustomerAttributeModelFactory customerAttributeModelFactory,
             ICustomerAttributeService customerAttributeService,
-            ILocalizedEntityService localizedEntityService,
             ILocalizationService localizationService,
-            IPermissionService permissionService,
-            ICustomerActivityService customerActivityService)
+            ILocalizedEntityService localizedEntityService,
+            INotificationService notificationService,
+            IPermissionService permissionService)
         {
-            this._customerAttributeModelFactory = customerAttributeModelFactory;
-            this._customerAttributeService = customerAttributeService;
-            this._localizedEntityService = localizedEntityService;
-            this._localizationService = localizationService;
-            this._permissionService = permissionService;
-            this._customerActivityService = customerActivityService;
+            _customerActivityService = customerActivityService;
+            _customerAttributeModelFactory = customerAttributeModelFactory;
+            _customerAttributeService = customerAttributeService;
+            _localizationService = localizationService;
+            _localizedEntityService = localizedEntityService;
+            _notificationService = notificationService;
+            _permissionService = permissionService;
         }
 
         #endregion
@@ -83,8 +87,8 @@ namespace Nop.Web.Areas.Admin.Controllers
             if (!_permissionService.Authorize(StandardPermissionProvider.ManageSettings))
                 return AccessDeniedView();
 
-            //select "customer form fields" tab
-            SaveSelectedTabName("tab-customerformfields");
+            //select an appropriate panel
+            SaveSelectedPanelName("customersettings-customerformfields");
 
             //we just redirect a user to the customer settings page
             return RedirectToAction("CustomerUser", "Setting");
@@ -94,7 +98,7 @@ namespace Nop.Web.Areas.Admin.Controllers
         public virtual IActionResult List(CustomerAttributeSearchModel searchModel)
         {
             if (!_permissionService.Authorize(StandardPermissionProvider.ManageSettings))
-                return AccessDeniedKendoGridJson();
+                return AccessDeniedDataTablesJson();
 
             //prepare model
             var model = _customerAttributeModelFactory.PrepareCustomerAttributeListModel(searchModel);
@@ -121,7 +125,7 @@ namespace Nop.Web.Areas.Admin.Controllers
 
             if (ModelState.IsValid)
             {
-                var customerAttribute = model.ToEntity();
+                var customerAttribute = model.ToEntity<CustomerAttribute>();
                 _customerAttributeService.InsertCustomerAttribute(customerAttribute);
 
                 //activity log
@@ -132,22 +136,18 @@ namespace Nop.Web.Areas.Admin.Controllers
                 //locales
                 UpdateAttributeLocales(customerAttribute, model);
 
-                SuccessNotification(_localizationService.GetResource("Admin.Customers.CustomerAttributes.Added"));
+                _notificationService.SuccessNotification(_localizationService.GetResource("Admin.Customers.CustomerAttributes.Added"));
 
-                if (continueEditing)
-                {
-                    //selected tab
-                    SaveSelectedTabName();
-
-                    return RedirectToAction("Edit", new { id = customerAttribute.Id });
-                }
-
-                return RedirectToAction("List");
+                if (!continueEditing)
+                    return RedirectToAction("List");
+                
+                return RedirectToAction("Edit", new { id = customerAttribute.Id });
             }
-
-            //If we got this far, something failed, redisplay form
+            
+            //prepare model
             model = _customerAttributeModelFactory.PrepareCustomerAttributeModel(model, null, true);
 
+            //if we got this far, something failed, redisplay form
             return View(model);
         }
 
@@ -175,35 +175,30 @@ namespace Nop.Web.Areas.Admin.Controllers
 
             var customerAttribute = _customerAttributeService.GetCustomerAttributeById(model.Id);
             if (customerAttribute == null)
-                //No customer attribute found with the specified id
+                //no customer attribute found with the specified id
                 return RedirectToAction("List");
 
-            if (ModelState.IsValid)
-            {
-                customerAttribute = model.ToEntity(customerAttribute);
-                _customerAttributeService.UpdateCustomerAttribute(customerAttribute);
+            if (!ModelState.IsValid)
+                //if we got this far, something failed, redisplay form
+                return View(model);
 
-                //activity log
-                _customerActivityService.InsertActivity("EditCustomerAttribute",
-                    string.Format(_localizationService.GetResource("ActivityLog.EditCustomerAttribute"), customerAttribute.Id),
-                    customerAttribute);
+            customerAttribute = model.ToEntity(customerAttribute);
+            _customerAttributeService.UpdateCustomerAttribute(customerAttribute);
 
-                //locales
-                UpdateAttributeLocales(customerAttribute, model);
+            //activity log
+            _customerActivityService.InsertActivity("EditCustomerAttribute",
+                string.Format(_localizationService.GetResource("ActivityLog.EditCustomerAttribute"), customerAttribute.Id),
+                customerAttribute);
 
-                SuccessNotification(_localizationService.GetResource("Admin.Customers.CustomerAttributes.Updated"));
-                if (continueEditing)
-                {
-                    //selected tab
-                    SaveSelectedTabName();
+            //locales
+            UpdateAttributeLocales(customerAttribute, model);
 
-                    return RedirectToAction("Edit", new { id = customerAttribute.Id });
-                }
+            _notificationService.SuccessNotification(_localizationService.GetResource("Admin.Customers.CustomerAttributes.Updated"));
+
+            if (!continueEditing)
                 return RedirectToAction("List");
-            }
-
-            //If we got this far, something failed, redisplay form
-            return View(model);
+            
+            return RedirectToAction("Edit", new { id = customerAttribute.Id });
         }
 
         [HttpPost]
@@ -220,7 +215,7 @@ namespace Nop.Web.Areas.Admin.Controllers
                 string.Format(_localizationService.GetResource("ActivityLog.DeleteCustomerAttribute"), customerAttribute.Id),
                 customerAttribute);
 
-            SuccessNotification(_localizationService.GetResource("Admin.Customers.CustomerAttributes.Deleted"));
+            _notificationService.SuccessNotification(_localizationService.GetResource("Admin.Customers.CustomerAttributes.Deleted"));
             return RedirectToAction("List");
         }
 
@@ -232,7 +227,7 @@ namespace Nop.Web.Areas.Admin.Controllers
         public virtual IActionResult ValueList(CustomerAttributeValueSearchModel searchModel)
         {
             if (!_permissionService.Authorize(StandardPermissionProvider.ManageSettings))
-                return AccessDeniedKendoGridJson();
+                return AccessDeniedDataTablesJson();
 
             //try to get a customer attribute with the specified id
             var customerAttribute = _customerAttributeService.GetCustomerAttributeById(searchModel.CustomerAttributeId)
@@ -274,14 +269,7 @@ namespace Nop.Web.Areas.Admin.Controllers
 
             if (ModelState.IsValid)
             {
-                var cav = new CustomerAttributeValue
-                {
-                    CustomerAttributeId = model.CustomerAttributeId,
-                    Name = model.Name,
-                    IsPreSelected = model.IsPreSelected,
-                    DisplayOrder = model.DisplayOrder
-                };
-
+                var cav = model.ToEntity<CustomerAttributeValue>();
                 _customerAttributeService.InsertCustomerAttributeValue(cav);
 
                 //activity log
@@ -295,9 +283,10 @@ namespace Nop.Web.Areas.Admin.Controllers
                 return View(model);
             }
 
-            //If we got this far, something failed, redisplay form
+            //prepare model
             model = _customerAttributeModelFactory.PrepareCustomerAttributeValueModel(model, customerAttribute, null, true);
 
+            //if we got this far, something failed, redisplay form
             return View(model);
         }
 
@@ -340,9 +329,7 @@ namespace Nop.Web.Areas.Admin.Controllers
 
             if (ModelState.IsValid)
             {
-                customerAttributeValue.Name = model.Name;
-                customerAttributeValue.IsPreSelected = model.IsPreSelected;
-                customerAttributeValue.DisplayOrder = model.DisplayOrder;
+                customerAttributeValue = model.ToEntity(customerAttributeValue);
                 _customerAttributeService.UpdateCustomerAttributeValue(customerAttributeValue);
 
                 //activity log
@@ -357,9 +344,10 @@ namespace Nop.Web.Areas.Admin.Controllers
                 return View(model);
             }
 
-            //If we got this far, something failed, redisplay form
+            //prepare model
             model = _customerAttributeModelFactory.PrepareCustomerAttributeValueModel(model, customerAttribute, customerAttributeValue, true);
 
+            //if we got this far, something failed, redisplay form
             return View(model);
         }
 

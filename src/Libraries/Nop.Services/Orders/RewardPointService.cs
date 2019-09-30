@@ -27,25 +27,17 @@ namespace Nop.Services.Orders
 
         #region Ctor
 
-        /// <summary>
-        /// Ctor
-        /// </summary>
-        /// <param name="dateTimeHelper">Date time helper</param>
-        /// <param name="eventPublisher">Event publisher</param>
-        /// <param name="localizationService">Localization service</param>
-        /// <param name="rewardPointsHistoryRepository">Reward points history repository</param>
-        /// <param name="rewardPointsSettings">Reward points settings</param>
         public RewardPointService(IDateTimeHelper dateTimeHelper,
             IEventPublisher eventPublisher,
             ILocalizationService localizationService,
             IRepository<RewardPointsHistory> rewardPointsHistoryRepository,
             RewardPointsSettings rewardPointsSettings)
         {
-            this._dateTimeHelper = dateTimeHelper;
-            this._eventPublisher = eventPublisher;
-            this._localizationService = localizationService;
-            this._rewardPointsHistoryRepository = rewardPointsHistoryRepository;
-            this._rewardPointsSettings = rewardPointsSettings;
+            _dateTimeHelper = dateTimeHelper;
+            _eventPublisher = eventPublisher;
+            _localizationService = localizationService;
+            _rewardPointsHistoryRepository = rewardPointsHistoryRepository;
+            _rewardPointsSettings = rewardPointsSettings;
         }
 
         #endregion
@@ -74,11 +66,9 @@ namespace Nop.Services.Orders
             //whether to show only the points that already activated
             if (!showNotActivated)
             {
-                //the function 'CurrentUtcDateTime' is not supported by SQL Server Compact, that's why we pass the date value
-                var nowUtc = DateTime.UtcNow;
-                query = query.Where(historyEntry => historyEntry.CreatedOnUtc < nowUtc);
+                query = query.Where(historyEntry => historyEntry.CreatedOnUtc < DateTime.UtcNow);
             }
-            
+
             //update points balance
             UpdateRewardPointsBalance(query);
 
@@ -107,9 +97,9 @@ namespace Nop.Services.Orders
                     Points = -historyEntry.ValidPoints.Value,
                     Message = string.Format(_localizationService.GetResource("RewardPoints.Expired"),
                         _dateTimeHelper.ConvertToUserTime(historyEntry.CreatedOnUtc, DateTimeKind.Utc)),
-                    CreatedOnUtc = historyEntry.EndDateUtc.Value,
+                    CreatedOnUtc = historyEntry.EndDateUtc.Value
                 });
-                
+
                 historyEntry.ValidPoints = 0;
                 UpdateRewardPointsHistoryEntry(historyEntry);
             }
@@ -176,6 +166,20 @@ namespace Nop.Services.Orders
         }
 
         /// <summary>
+        /// Gets reduced reward points balance per order
+        /// </summary>
+        /// <param name="rewardPointsBalance">Reward points balance</param>
+        /// <returns>Reduced balance</returns>
+        public int GetReducedPointsBalance(int rewardPointsBalance)
+        {
+            if (_rewardPointsSettings.MaximumRewardPointsToUsePerOrder > 0 &&
+                rewardPointsBalance > _rewardPointsSettings.MaximumRewardPointsToUsePerOrder)
+                return _rewardPointsSettings.MaximumRewardPointsToUsePerOrder;
+
+            return rewardPointsBalance;
+        }
+
+        /// <summary>
         /// Add reward points history record
         /// </summary>
         /// <param name="customer">Customer</param>
@@ -216,20 +220,20 @@ namespace Nop.Services.Orders
             InsertRewardPointsHistoryEntry(newHistoryEntry);
 
             //reduce valid points of previous entries
-            if (points < 0)
-            {
-                var withValidPoints = GetRewardPointsQuery(customer.Id, storeId)
-                    .Where(historyEntry => historyEntry.ValidPoints > 0)
-                    .OrderBy(historyEntry => historyEntry.CreatedOnUtc).ThenBy(historyEntry => historyEntry.Id).ToList();
-                foreach (var historyEntry in withValidPoints)
-                {
-                    points += historyEntry.ValidPoints.Value;
-                    historyEntry.ValidPoints = Math.Max(points, 0);
-                    UpdateRewardPointsHistoryEntry(historyEntry);
+            if (points >= 0) 
+                return newHistoryEntry.Id;
 
-                    if (points >= 0)
-                        break;
-                }
+            var withValidPoints = GetRewardPointsQuery(customer.Id, storeId)
+                .Where(historyEntry => historyEntry.ValidPoints > 0)
+                .OrderBy(historyEntry => historyEntry.CreatedOnUtc).ThenBy(historyEntry => historyEntry.Id).ToList();
+            foreach (var historyEntry in withValidPoints)
+            {
+                points += historyEntry.ValidPoints.Value;
+                historyEntry.ValidPoints = Math.Max(points, 0);
+                UpdateRewardPointsHistoryEntry(historyEntry);
+
+                if (points >= 0)
+                    break;
             }
 
             return newHistoryEntry.Id;

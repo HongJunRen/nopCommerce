@@ -1,14 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using FluentValidation.Attributes;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Nop.Plugin.Payments.Square.Validators;
-using Nop.Web.Framework.Mvc.ModelBinding;
 using Nop.Web.Framework.Models;
+using Nop.Web.Framework.Mvc.ModelBinding;
 
 namespace Nop.Plugin.Payments.Square.Models
 {
-    [Validator(typeof(ConfigurationModelValidator))]
+    /// <summary>
+    /// Represents configuration model
+    /// </summary>
     public class ConfigurationModel : BaseNopModel
     {
         #region Ctor
@@ -39,14 +39,18 @@ namespace Nop.Plugin.Payments.Square.Models
         public string AccessToken { get; set; }
 
         [NopResourceDisplayName("Plugins.Payments.Square.Fields.SandboxAccessToken")]
+        [DataType(DataType.Password)]
+        [NoTrim]
         public string SandboxAccessToken { get; set; }
 
         [NopResourceDisplayName("Plugins.Payments.Square.Fields.UseSandbox")]
         public bool UseSandbox { get; set; }
 
+        [NopResourceDisplayName("Plugins.Payments.Square.Fields.Use3ds")]
+        public bool Use3ds { get; set; }
+
         [NopResourceDisplayName("Plugins.Payments.Square.Fields.TransactionMode")]
         public int TransactionModeId { get; set; }
-        public SelectList TransactionModes { get; set; }
 
         [NopResourceDisplayName("Plugins.Payments.Square.Fields.Location")]
         public string LocationId { get; set; }
